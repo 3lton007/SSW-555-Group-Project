@@ -146,6 +146,15 @@ class Individual:
 
         return [self.id, self.name, self.sex, self.birth, self.age, self.living, self.death_date, (self.famc or "None"), (self.fams or "NA")]
 
+    def return_living_and_marital_details(self) -> Tuple[bool, int, str]:
+        '''Implemented for US30 & US31. 
+            Returns a tuple containing: individual's name as the first element, age as second element, a boolean as third element, and an int as the fourth element.
+            -The boolean is True if individual is living, False if not.
+            -The int reflects the # of families this individual has been a spouse of. If 0, the individual is/has not married. If greter than 0, the individual is married.
+        '''
+
+        return self.name, self.age, self.living, len(self.fams) 
+
 
 class GedcomFile:
     '''class GedcomFile'''
@@ -156,6 +165,8 @@ class GedcomFile:
     
     _individual_dt: Dict[str, Individual] = dict()
     _family_dt: Dict[str, Family] = dict()
+    _individuals_living_and_married: Dict[str, str] = dict()
+    _individuals_living_over_thirty_and_never_married: Dict[str, str] = dict()
 
     def __init__(self) -> None:
         '''Sets containers to store the input and output lines'''
@@ -219,7 +230,6 @@ class GedcomFile:
             if validity == 'Y':
                 self._validated_list.append([level, tag, arg])
 
-
     def parse_valid_entry(self) -> Tuple[str]:
         '''Generator to extract level, tag and argument from validated list'''
 
@@ -228,7 +238,6 @@ class GedcomFile:
             tag: str = valid_line[1]
             argument: str = valid_line[2]
             yield level, tag, argument
-
 
     def parse_validated_gedcom(self) -> None:
         '''Parses the gedcom entries for individuals and families'''
@@ -367,6 +376,46 @@ class GedcomFile:
                 print("RECENT BIRTH: US35: Name: %s, Individual: ID %s, born %d days ago! Birthday: %s" \
                 %(person.name, person.id, age_days, birth_date))
 
+    def parse_individuals_based_on_living_and_marital_details(self) -> None:
+        '''US30 & US31: Identifies whether an individual is: Living and married, or Living, over 30 years old and has never been married. After identifying, stores the 
+            individuals ID and Name in either the _individuals_living_and_married dictionary or the _individuals_living_over_thirty_and_never_married dictionary'''
+        
+        for individual_id, individual in self._individual_dt.items():
+            name, age, alive, number_of_times_married = individual.return_living_and_marital_details()
+            
+            if alive == True and number_of_times_married > 0:
+                GedcomFile._individuals_living_and_married[individual_id] = name
+            
+            elif alive == True and age > 30 and number_of_times_married == 0:
+                GedcomFile._individuals_living_over_thirty_and_never_married[individual_id] = name
+
+    def list_individuals_living_and_married(self) -> None:
+        '''US30: Prints a prettytable that lists all individuals that are alive and married'''
+
+        pretty_table_for_living_and_married_people: PrettyTable = PrettyTable(field_names=['ID', 'Name'])
+
+        if len(GedcomFile._individuals_living_and_married) == 0:
+            pretty_table_for_living_and_married_people.add_row(['None', 'None'])
+        
+        else:
+            for individual_id, name in GedcomFile._individuals_living_and_married.items():
+                pretty_table_for_living_and_married_people.add_row([individual_id, name])
+        
+        print(f'All Individuals Living and Married:\n{pretty_table_for_living_and_married_people}\n')
+
+    def list_individuals_living_over_thirty_never_married(self) -> None:
+        '''US31: Prints a prettytable that lists all individuals that are alive, over 30 yrs old, and have never been married'''
+
+        pretty_table_for_living_over_thirty_never_married: PrettyTable = PrettyTable(field_names=['ID', 'Name'])
+
+        if len(GedcomFile._individuals_living_over_thirty_and_never_married) == 0:
+            pretty_table_for_living_over_thirty_never_married.add_row(['None', 'None'])
+        
+        else:
+            for individual_id, name in GedcomFile._individuals_living_over_thirty_and_never_married.items():
+                pretty_table_for_living_over_thirty_never_married.add_row([individual_id, name])
+        
+        print(f'All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
 
 
 def main() -> None:
@@ -389,6 +438,11 @@ def main() -> None:
     # Print out User Story output from hereon
     gedcom.US34_list_large_age_differences()
     gedcom.US35_list_recent_births()
+
+    #US30 & #US31
+    gedcom.parse_individuals_based_on_living_and_marital_details()
+    gedcom.list_individuals_living_and_married()
+    gedcom.list_individuals_living_over_thirty_never_married()
 
 if __name__ == '__main__':
     main()
