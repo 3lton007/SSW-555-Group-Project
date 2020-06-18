@@ -7,9 +7,58 @@ import sys
 import logging
 from typing import IO, Dict
 from SSW555_Group_Project import Individual, GedcomFile
+from prettytable import PrettyTable
 
 # Set True if you want to see expected/actual values.
 TC_VERBOSE = False
+
+
+class Test_US29(unittest.TestCase):
+
+    def print_testcasedetails(self,expected,actual):
+        if TC_VERBOSE==True:
+            self.log.debug("Test Case: %s",self.id())
+            self.log.debug("Expected Value: %s" %expected)
+            self.log.debug("  Actual Value: %s" %actual)
+            self.log.debug("Test Passed? %s" %(expected==actual)) 
+
+    def setUp(self):
+        SSW555_Group_Project.GedcomFile._individual_dt.clear()
+        self.gedcom = SSW555_Group_Project.GedcomFile()
+        # Create 4 individuals. 2 are living, 2 are deceased.
+        for i in range(0,4):
+            self.person = SSW555_Group_Project.Individual()
+            self.person.id = "@I" + str(i) + "@"
+            self.person.name = "Test " + "Subject"+ str(i)
+            SSW555_Group_Project.GedcomFile._individual_dt[self.person.id] = self.person
+
+        self.log = logging.getLogger("Test")     
+
+    @unittest.mock.patch('sys.stdout', new_callable=io.StringIO)
+    def test_list_deceased(self,mocked_stdout):
+
+        # Simulate 2 individuals as deceased.
+        SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].living = False
+        SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].living = False
+
+        # our expected output is a pretty table
+        expected_pt: PrettyTable = PrettyTable(field_names=['ID', 'Name'])
+        expected_pt.add_row(["@I0@", "Test Subject0"])
+        expected_pt.add_row(["@I1@", "Test Subject1"])
+        
+        # Call method under test
+        SSW555_Group_Project.GedcomFile.US29_list_deceased_individuals(self.gedcom)
+        
+        # Convert our expected pretty table to a string so that we can easily compare
+        # that against our mocked stdout
+        expected = str(expected_pt)
+        expected = "US29: All Deceased Individuals\n" + expected + "\n" + "\n"
+        actual = mocked_stdout.getvalue()
+
+        self.assertEqual(actual, expected)
+        self.print_testcasedetails(expected, actual)
+
+
 
 class Test_US35(unittest.TestCase):
 
