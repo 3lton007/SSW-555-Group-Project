@@ -155,6 +155,11 @@ class Individual:
 
         return self.name, self.age, self.living, len(self.fams) 
 
+    def return_am_i_alive(self) -> bool:
+        '''Returns True if individual is alive. Returns False if individual is decesased'''
+
+        return self.living
+
 
 class GedcomFile:
     '''class GedcomFile'''
@@ -417,6 +422,17 @@ class GedcomFile:
         
         print(f'All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
 
+    def US29_list_deceased_individuals(self) -> None:
+        '''US29: Prints a prettytable that contains all deceased individuals'''
+
+        pretty_table_for_deceased_individuals: PrettyTable = PrettyTable(field_names=['ID', 'Name'])
+
+        for individual_id, individual in self._individual_dt.items():
+            if individual.return_am_i_alive() == False:
+                pretty_table_for_deceased_individuals.add_row([individual_id, individual.name])
+        
+        print(f'US29: All Deceased Individuals\n{pretty_table_for_deceased_individuals}\n')
+
 
 def main() -> None:
     '''Runs main program'''
@@ -443,6 +459,9 @@ def main() -> None:
     gedcom.parse_individuals_based_on_living_and_marital_details()
     gedcom.list_individuals_living_and_married()
     gedcom.list_individuals_living_over_thirty_never_married()
+
+    #US29
+    gedcom.US29_list_deceased_individuals()
 
 if __name__ == '__main__':
     main()
