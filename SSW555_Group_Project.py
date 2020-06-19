@@ -469,11 +469,14 @@ def main() -> None:
     # Print out User Story output from hereon
     gedcom.US34_list_large_age_differences()
     gedcom.US35_list_recent_births()
+    gedcom.US4_Marriage_before_divorce()
+    gedcom.US21_correct_gender_for_role()
 
     #US30 & #US31
     gedcom.parse_individuals_based_on_living_and_marital_details()
     gedcom.list_individuals_living_and_married()
     gedcom.list_individuals_living_over_thirty_never_married()
+    
 
 if __name__ == '__main__':
     main()
