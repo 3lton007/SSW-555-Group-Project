@@ -250,7 +250,7 @@ class GedcomFileTest(unittest.TestCase):
         
         result: Dict[str, str] = gedcom._individuals_living_over_thirty_and_never_married
         
-        expected: Dict[str, str] = {}
+        expected: Dict[str, str] = {'@A3@' : 'Peter /Parker/'}
 
         self.assertEqual(result, expected)
 
