@@ -320,9 +320,9 @@ class GedcomFile:
                 
             self._family_dt[entry].wife_name = wife_name 
             
-    def  US4_Marriage_before_divorce(self): 
-         '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
-        r = list
+    def US4_Marriage_before_divorce(self): 
+        '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
+        r = list()
         for id in self._family_dt:
             marDate = self._family_dt[id].marriage_date
             divDate = self._family_dt[id].divorce_date
@@ -330,16 +330,14 @@ class GedcomFile:
                 print(f"ANOMALY:US04:FAMILY:<{id}> no marriage date ")
                 r.append(f"ANOMALY:US04:FAMILY:<{id}> no marriage date ")
             elif divDate != 'NA':
-                mDate = datetime.datetime.strptime(marDate,"%Y-%m-%d")
-                dDate = datetime.datetime.strptime(divDate, "%Y-%m-%d") 
-                if mDate > dDate:
+                if marDate > divDate:
                     print(f"ANOMALY:US04:FAMILY:<{id}> Divorce happens before marriage ")   
                     r.append(f"ANOMALY:US04:FAMILY:<{id}> Divorce happens before marriage ")
         return r
 
     def US21_correct_gender_for_role(self):
-       ''' Husband in family should be male and wife in family should be female'''
-        r = list 
+        '''Husband in family should be male and wife in family should be female'''
+        r = list()
         for fm in self._family_dt.values():
             if fm.husband_id != 'NA' and fm.wife_id != 'NA':
                 if self._individual_dt[fm.husband_id].sex!= "M" or self._individual_dt[fm.wife_id].sex != "F":
