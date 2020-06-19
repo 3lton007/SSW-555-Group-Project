@@ -318,7 +318,32 @@ class GedcomFile:
             except KeyError:
                 wife_name = "Unknown"  
                 
-            self._family_dt[entry].wife_name = wife_name 
+            self._family_dt[entry].wife_name = wife_name
+    def US03_birth_death(self):
+        ''' Birth before death '''
+        x = []
+        for k, v in self._individual_dt.items():
+            if v.death_date != 'NA' and v.birth != 'NA':
+                if(v.death_date < v.birth):
+                    print(f"ANOMALY: US03:{v.name} has death date before birth")
+                    x.append(k)
+        return x
+
+    def US06_divorce_before_death(self):
+        '''Divorce can take place only before death of both individuals '''
+        x = []
+        for k, v in self._family_dt.items():
+            if v.divorce_date != 'NA':
+                hd = self._individual_dt[v.husband_id].death_date
+                wd = self._individual_dt[v.wife_id].death_date
+                if hd != 'NA' and v.divorce_date > hd:
+                    print(f"ANOMALY: US06: {k}: Divorced {v.divorce_date} after partner's death {hd}")
+                    x.append(k)
+                if wd != 'NA' and v.divorce_date > wd:
+                    print(f"ANOMALY: US06: {k}: Divorced {v.divorce_date} after partner's death {wd}")
+                    x.append(k)
+        return x
+
 
 
     def US34_list_large_age_differences(self) -> None:
