@@ -401,7 +401,7 @@ class GedcomFile:
             for individual_id, name in GedcomFile._individuals_living_and_married.items():
                 pretty_table_for_living_and_married_people.add_row([individual_id, name])
         
-        print(f'All Individuals Living and Married:\n{pretty_table_for_living_and_married_people}\n')
+        print(f'\nUS30: All Individuals Living and Married:\n{pretty_table_for_living_and_married_people}\n')
 
     def list_individuals_living_over_thirty_never_married(self) -> None:
         '''US31: Prints a prettytable that lists all individuals that are alive, over 30 yrs old, and have never been married'''
@@ -415,7 +415,7 @@ class GedcomFile:
             for individual_id, name in GedcomFile._individuals_living_over_thirty_and_never_married.items():
                 pretty_table_for_living_over_thirty_never_married.add_row([individual_id, name])
         
-        print(f'All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
+        print(f'US31: All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
 
 
 def main() -> None:

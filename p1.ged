@@ -79,6 +79,46 @@
 1 BIRT
 2 DATE 14 APR 1998
 1 FAMC @F2@
+
+
+0 NOTE US34: Husband more than 2x older than Wife
+0 @I8@ INDI
+1 NAME Manuel /Rivera/
+1 SEX M
+1 BIRT
+2 DATE 14 APR 1979
+1 FAMC @F4@
+0 @I9@ INDI
+1 NAME Jenny /Rivera/
+1 SEX F
+1 BIRT
+2 DATE 14 APR 2000
+
+
+
+0 NOTE US34: Wife more than 2x older than husband
+0 @I10@ INDI
+1 NAME James /Matthews/
+1 SEX M
+1 BIRT
+2 DATE 14 APR 2000
+1 FAMS @F5@
+0 @I11@ INDI
+1 NAME Vera /Matthews/
+1 SEX F
+1 BIRT
+2 DATE 14 APR 1979
+1 FAMS @F5@
+
+
+0 NOTE US35: Recent Birth
+0 @I12@ INDI
+1 NAME Alma /Santana/
+1 SEX F
+1 BIRT
+2 DATE 16 JUN 2020
+1 FAMC @F5@
+
 0 @F1@ FAM
 1 HUSB @I2@
 1 WIFE @I3@
@@ -98,6 +138,15 @@
 1 HUSB @I4@
 1 WIFE @I5@
 1 CHIL @I2@
+
+0 @F4@ FAM
+1 HUSB @I8@
+1 WIFE @I9@
+
+0 @F5@ FAM
+1 HUSB @I10@
+1 WIFE @I11@
+1 CHIL @I12@
 1 _CURRENT Y
 0 @A3@ INDI
 1 NAME Peter /Parker/
