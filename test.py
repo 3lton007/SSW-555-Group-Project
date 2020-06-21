@@ -230,6 +230,13 @@ class GedcomFileTest(unittest.TestCase):
         expected: Dict[str, str] = {
                                     '@I10@' : 'James /Matthews/',
                                     '@I11@' : 'Vera /Matthews/',
+                                    '@I14@' : 'Jim /Halpert/',
+                                    '@I16@' : 'Ross /Geller/',
+                                    '@I17@' : 'Rachel /Geller/',
+                                    '@I18@' : 'Steve /Smith/',
+                                    '@I19@' : 'April /Smith/',
+                                    '@I20@' : 'Sammy /Paterson/',
+                                    '@I21@' : 'Ran /Paterson/',
                                     '@I2@' : 'Sankar /Sam/',
                                     '@I3@' : 'Sunitha /Krish/',
                                     '@I5@' : 'Baby /Chung/',
@@ -272,7 +279,9 @@ class GedcomFileTest(unittest.TestCase):
         gedcom.family_set_spouse_names()
         result = gedcom.US06_divorce_before_death()
 
-        expect = ['@F4@']
+        expect = [
+                   f"ANOMALY: US06: family:@F6@: Husband ID: @I14@ Husband Name: Jim /Halpert/ Divorced 2018-04-14 after wife's death:  ID: @I15@ Name: Pam /Halpert/ death date: 2018-04-13"
+                 ]
         self.assertEqual(expect, result)
 
     def test_US03(self):
@@ -286,7 +295,10 @@ class GedcomFileTest(unittest.TestCase):
         gedcom.family_set_spouse_names()
         result = gedcom.US03_birth_death()
 
-        expect = ["@F1@"]
+        expect = [ 
+                  f"ANOMALY: US03: Individual ID: @I13@ Name: Joe /Swanson/ has death date 2000-04-13 before birth 2000-04-14"
+                 ]
+
         self.assertEqual(expect, result)
 
 
@@ -331,32 +343,18 @@ class TestUS04_US21(unittest.TestCase):
         SSW555_Group_Project.GedcomFile._family_dt["@F_Stest0"].marriage_date = datetime.date(1985,11,11)
         SSW555_Group_Project.GedcomFile._family_dt["@F_Stest0"].divorce_date = datetime.date(1985,11,10)
 
-        # Family 1: No Marriage Date
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest1"].marriage_date = 'NA'
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest1"].divorce_date = datetime.date(1985,11,10)
-
         # Family 2: Normal (Divorce after Marriage by 1 day). No Error Expected
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest2"].marriage_date = datetime.date(1985,11,10)
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest2"].divorce_date = datetime.date(1985,12,10)
-
-        # Family 3: No Marriage or Divorce Date
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest3"].marriage_date = 'NA'
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest3"].divorce_date = 'NA'
-
-        # Family 4: Normal (No Divorce Date). No Error Expected.
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest4"].marriage_date = datetime.date(1985,11,10)
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest4"].divorce_date = 'NA'       
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest1"].marriage_date = datetime.date(1985,11,10)
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest1"].divorce_date = datetime.date(1985,12,10)     
    
         # Family 5: Normal (Divorce after Marriage by 60 years). No Error Expected
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest5"].marriage_date = datetime.date(1940,11,10)
-        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest5"].divorce_date = datetime.date(2000,11,10)   
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest2"].marriage_date = datetime.date(1940,11,10)
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest2"].divorce_date = datetime.date(2000,11,10)   
 
 
         result = self.gedcom.US4_Marriage_before_divorce()
         expect = [
-                  'ANOMALY:US04:FAMILY:<@F_Stest0> Divorce happens before marriage ', 
-                  'ANOMALY:US04:FAMILY:<@F_Stest1> No marriage date ',
-                  'ANOMALY:US04:FAMILY:<@F_Stest3> No marriage date ',
+                  "ANOMALY:US04:FAMILY:<@F_Stest0> Divorce 1985-11-10 happens before marriage 1985-11-11 Husband: ID @I0@, Name Test Subject0  Wife: ID @I1@, Name Test Subject1" , 
                  ]
         self.assertEqual(result, expect)
 
@@ -387,10 +385,10 @@ class TestUS04_US21(unittest.TestCase):
 
         result = self.gedcom.US21_correct_gender_for_role()
         expect = [
-                  "ANOMALY: US21: FAMILY:<@F_Stest0> Couples'roles are not correct ",
-                  "ANOMALY: US21: FAMILY:<@F_Stest1> Couples'roles are not correct ",
-                  "ANOMALY: US21: FAMILY:<@F_Stest2> Couples'roles are not correct ",
-                  "ANOMALY: US21: FAMILY:<@F_Stest3> Couples'roles are not correct ",
+                  "ANOMALY: US21: FAMILY:<@F_Stest0> Incorrect sex for husband id: @I0@ name: Test Subject0 sex: F ",
+                  "ANOMALY: US21: FAMILY:<@F_Stest1> Incorrect sex for wife id: @I3@ name: Test Subject3 sex: M ",
+                  "ANOMALY: US21: FAMILY:<@F_Stest2> Incorrect sex for wife id: @I5@ name: Test Subject5 sex: BAD VALUE ",
+                  "ANOMALY: US21: FAMILY:<@F_Stest3> Incorrect sex for husband id: @I6@ name: Test Subject6 sex:  ",
                  ]
         self.assertEqual(result, expect)
 

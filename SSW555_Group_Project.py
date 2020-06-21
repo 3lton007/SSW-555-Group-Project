@@ -325,8 +325,9 @@ class GedcomFile:
         for k, v in self._individual_dt.items():
             if v.death_date != 'NA' and v.birth != 'NA':
                 if(v.death_date < v.birth):
-                    print(f"ANOMALY: US03:{v.name} has death date before birth")
-                    x.append(k)
+                    output = f"ANOMALY: US03: Individual ID: {k} Name: {v.name} has death date {v.death_date} before birth {v.birth}"
+                    print(output)
+                    x.append(output)
         return x
 
     def US06_divorce_before_death(self):
@@ -337,11 +338,13 @@ class GedcomFile:
                 hd = self._individual_dt[v.husband_id].death_date
                 wd = self._individual_dt[v.wife_id].death_date
                 if hd != 'NA' and v.divorce_date > hd:
-                    print(f"ANOMALY: US06: {k}: Divorced {v.divorce_date} after partner's death {hd}")
-                    x.append(k)
+                    output = f"ANOMALY: US06: family:{k}: Wife ID: {v.wife_id} Wife Name: {v.wife_name} Divorced {v.divorce_date} after husband's death:  ID: {v.husband_id} Name: {v.husband_name} death date: {hd}"
+                    print(output)
+                    x.append(output)
                 if wd != 'NA' and v.divorce_date > wd:
-                    print(f"ANOMALY: US06: {k}: Divorced {v.divorce_date} after partner's death {wd}")
-                    x.append(k)
+                   output = f"ANOMALY: US06: family:{k}: Husband ID: {v.husband_id} Husband Name: {v.husband_name} Divorced {v.divorce_date} after wife's death:  ID: {v.wife_id} Name: {v.wife_name} death date: {wd}"
+                   print(output)
+                   x.append(output)
         return x            
                
             
@@ -351,13 +354,15 @@ class GedcomFile:
         for id in self._family_dt:
             marDate = self._family_dt[id].marriage_date
             divDate = self._family_dt[id].divorce_date
-            if marDate == 'NA':
-                print(f"ANOMALY:US04:FAMILY:<{id}> No marriage date ")
-                r.append(f"ANOMALY:US04:FAMILY:<{id}> No marriage date ")
-            elif divDate != 'NA':
+            if divDate != 'NA' and marDate != 'NA':
                 if marDate > divDate:
-                    print(f"ANOMALY:US04:FAMILY:<{id}> Divorce happens before marriage ")   
-                    r.append(f"ANOMALY:US04:FAMILY:<{id}> Divorce happens before marriage ")
+                    h_name = self._family_dt[id].husband_name
+                    h_id = self._family_dt[id].husband_id
+                    w_name = self._family_dt[id].wife_name
+                    w_id = self._family_dt[id].wife_id
+                    output = f"ANOMALY:US04:FAMILY:<{id}> Divorce {divDate} happens before marriage {marDate} Husband: ID {h_id}, Name {h_name}  Wife: ID {w_id}, Name {w_name}"  
+                    print(output)
+                    r.append(output)
         return r
 
     def US21_correct_gender_for_role(self):
@@ -371,8 +376,9 @@ class GedcomFile:
                 pass
             else:
                 if husband_sex != "M":
-                    print(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
-                    r.append(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+                    output = f"ANOMALY: US21: FAMILY:<{fm.id}> Incorrect sex for husband id: {fm.husband_id} name: {fm.husband_name} sex: {husband_sex} "
+                    print(output)
+                    r.append(output)
 
             try:
                wife_sex = self._individual_dt[fm.wife_id].sex
@@ -381,8 +387,9 @@ class GedcomFile:
                 pass
             else:
                 if wife_sex != "F":
-                    print(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
-                    r.append(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")  
+                    output = f"ANOMALY: US21: FAMILY:<{fm.id}> Incorrect sex for wife id: {fm.wife_id} name: {fm.wife_name} sex: {wife_sex} "
+                    print(output)
+                    r.append(output) 
         return r
 
     def US34_list_large_age_differences(self) -> None:
@@ -510,6 +517,8 @@ def main() -> None:
     gedcom.list_individuals_living_and_married()
     gedcom.list_individuals_living_over_thirty_never_married()
     
+    gedcom.US03_birth_death()
+    gedcom.US06_divorce_before_death()
 
 if __name__ == '__main__':
     main()
