@@ -14,7 +14,7 @@ class Family:
         '''Initializes the details for an instance of a family'''
 
         self.id: str = ''
-        self.marriage_date: str = ''                         
+        self.marriage_date: str = 'NA'                         
         self.divorce_date: str = 'NA'                                 
         self.husband_id: str = ''
         self.husband_name: str = 'TBD'
@@ -319,6 +319,47 @@ class GedcomFile:
                 wife_name = "Unknown"  
                 
             self._family_dt[entry].wife_name = wife_name 
+            
+    def US4_Marriage_before_divorce(self): 
+        '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
+        r = list()
+        for id in self._family_dt:
+            marDate = self._family_dt[id].marriage_date
+            divDate = self._family_dt[id].divorce_date
+            if marDate == 'NA':
+                print(f"ANOMALY:US04:FAMILY:<{id}> No marriage date ")
+                r.append(f"ANOMALY:US04:FAMILY:<{id}> No marriage date ")
+            elif divDate != 'NA':
+                if marDate > divDate:
+                    print(f"ANOMALY:US04:FAMILY:<{id}> Divorce happens before marriage ")   
+                    r.append(f"ANOMALY:US04:FAMILY:<{id}> Divorce happens before marriage ")
+        return r
+
+    def US21_correct_gender_for_role(self):
+        '''Husband in family should be male and wife in family should be female'''
+        r = list()
+        for fm in self._family_dt.values():
+            try:
+                husband_sex = self._individual_dt[fm.husband_id].sex
+            except KeyError:
+                # Uninitialized husband ID. Skip it.
+                pass
+            else:
+                if husband_sex != "M":
+                    print(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+                    r.append(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+
+            try:
+               wife_sex = self._individual_dt[fm.wife_id].sex
+            except KeyError:
+                # Uninitialized Wife ID. Skip it.
+                pass
+            else:
+                if wife_sex != "F":
+                    print(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+                    r.append(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")  
+        return r
+
 
 
     def US34_list_large_age_differences(self) -> None:
@@ -438,11 +479,14 @@ def main() -> None:
     # Print out User Story output from hereon
     gedcom.US34_list_large_age_differences()
     gedcom.US35_list_recent_births()
+    gedcom.US4_Marriage_before_divorce()
+    gedcom.US21_correct_gender_for_role()
 
     #US30 & #US31
     gedcom.parse_individuals_based_on_living_and_marital_details()
     gedcom.list_individuals_living_and_married()
     gedcom.list_individuals_living_over_thirty_never_married()
+    
 
 if __name__ == '__main__':
     main()
