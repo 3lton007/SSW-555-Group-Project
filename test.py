@@ -261,6 +261,34 @@ class GedcomFileTest(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
+    def test_US06(self):
+    
+        gedcom: GedcomFile = GedcomFile()
+        gedcom.read_file(GedcomFileTest.test_file_name)
+        gedcom.validate_tags_for_output()
+        
+        gedcom.update_validated_list()
+        gedcom.parse_validated_gedcom()
+        gedcom.family_set_spouse_names()
+        result = gedcom.US06_divorce_before_death()
+
+        expect = ['@F4@']
+        self.assertEqual(expect, result)
+
+    def test_US03(self):
+    
+        gedcom: GedcomFile = GedcomFile()
+        gedcom.read_file(GedcomFileTest.test_file_name)
+        gedcom.validate_tags_for_output()
+        
+        gedcom.update_validated_list()
+        gedcom.parse_validated_gedcom()
+        gedcom.family_set_spouse_names()
+        result = gedcom.US03_birth_death()
+
+        expect = ["@F1@"]
+        self.assertEqual(expect, result)
+
 
 
 
