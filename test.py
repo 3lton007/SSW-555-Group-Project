@@ -257,6 +257,114 @@ class GedcomFileTest(unittest.TestCase):
 
 
 
+
+class TestUS04_US21(unittest.TestCase):
+    def setUp(self):
+        SSW555_Group_Project.GedcomFile._individual_dt.clear()
+        SSW555_Group_Project.GedcomFile._family_dt.clear()
+        self.gedcom = SSW555_Group_Project.GedcomFile()
+
+        # Create 6 pairs husband/wife. This creates the individuals and families.
+        for i in range(0,(6*2)):
+
+            if i%2 == 0:
+                self.family = SSW555_Group_Project.Family()
+                self.family.id = "@F_Stest" + str(i//2)
+                SSW555_Group_Project.GedcomFile._family_dt[self.family.id] = self.family
+
+            self.person = SSW555_Group_Project.Individual()
+            self.person.id = "@I" + str(i) + "@"
+            self.person.living = True
+            self.person.name = "Test " + "Subject"+ str(i)
+            self.person.fams = "@F_Stest" + str(i//2)
+
+            if i%2 == 0:
+                self.person.sex = "M"
+                self.family.husband_id = self.person.id
+                self.family.husband_name = self.person.name
+            else:
+                self.person.sex = "F"
+                self.family.wife_id = self.person.id
+                self.family.wife_name = self.person.name
+
+            SSW555_Group_Project.GedcomFile._individual_dt[self.person.id] = self.person
+
+        self.log = logging.getLogger("Test")
+     
+    def test_US04_Marriage_before_divorce(self):
+        # Family 0: Divorce before marriage by 1 day
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest0"].marriage_date = datetime.date(1985,11,11)
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest0"].divorce_date = datetime.date(1985,11,10)
+
+        # Family 1: No Marriage Date
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest1"].marriage_date = 'NA'
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest1"].divorce_date = datetime.date(1985,11,10)
+
+        # Family 2: Normal (Divorce after Marriage by 1 day). No Error Expected
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest2"].marriage_date = datetime.date(1985,11,10)
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest2"].divorce_date = datetime.date(1985,12,10)
+
+        # Family 3: No Marriage or Divorce Date
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest3"].marriage_date = 'NA'
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest3"].divorce_date = 'NA'
+
+        # Family 4: Normal (No Divorce Date). No Error Expected.
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest4"].marriage_date = datetime.date(1985,11,10)
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest4"].divorce_date = 'NA'       
+   
+        # Family 5: Normal (Divorce after Marriage by 60 years). No Error Expected
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest5"].marriage_date = datetime.date(1940,11,10)
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest5"].divorce_date = datetime.date(2000,11,10)   
+
+
+        result = self.gedcom.US4_Marriage_before_divorce()
+        expect = [
+                  'ANOMALY:US04:FAMILY:<@F_Stest0> Divorce happens before marriage ', 
+                  'ANOMALY:US04:FAMILY:<@F_Stest1> No marriage date ',
+                  'ANOMALY:US04:FAMILY:<@F_Stest3> No marriage date ',
+                 ]
+        self.assertEqual(result, expect)
+
+
+
+    def test_US21_correct_gender_for_role(self):
+        # Family 0: Wrong Husband Sex
+        husband_id = SSW555_Group_Project.GedcomFile._family_dt["@F_Stest0"].husband_id
+        SSW555_Group_Project.GedcomFile._individual_dt[husband_id].sex = "F"
+
+        # Family 1: Wrong Wife Sex
+        wife_id = SSW555_Group_Project.GedcomFile._family_dt["@F_Stest1"].wife_id
+        SSW555_Group_Project.GedcomFile._individual_dt[wife_id].sex = "M"
+
+        # Family 2: Invalid Wife Sex
+        wife_id = SSW555_Group_Project.GedcomFile._family_dt["@F_Stest2"].wife_id
+        SSW555_Group_Project.GedcomFile._individual_dt[wife_id].sex = "BAD VALUE"
+
+        # Family 3: Invalid Husband Sex
+        husband_id = SSW555_Group_Project.GedcomFile._family_dt["@F_Stest3"].husband_id
+        SSW555_Group_Project.GedcomFile._individual_dt[husband_id].sex = ""
+
+        # Family 4: Uninitialized Husband ID (No error expected)
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest4"].husband_id = ""
+
+        # Family 5: Uninitialized Wife ID (No Error expected)
+        SSW555_Group_Project.GedcomFile._family_dt["@F_Stest4"].wife_id = ""        
+
+        result = self.gedcom.US21_correct_gender_for_role()
+        expect = [
+                  "ANOMALY: US21: FAMILY:<@F_Stest0> Couples'roles are not correct ",
+                  "ANOMALY: US21: FAMILY:<@F_Stest1> Couples'roles are not correct ",
+                  "ANOMALY: US21: FAMILY:<@F_Stest2> Couples'roles are not correct ",
+                  "ANOMALY: US21: FAMILY:<@F_Stest3> Couples'roles are not correct ",
+                 ]
+        self.assertEqual(result, expect)
+
+
+
+
+
+
+
 if __name__ == '__main__':
     if TC_VERBOSE == True:
         logging.basicConfig( stream=sys.stderr )

@@ -14,7 +14,7 @@ class Family:
         '''Initializes the details for an instance of a family'''
 
         self.id: str = ''
-        self.marriage_date: str = ''                         
+        self.marriage_date: str = 'NA'                         
         self.divorce_date: str = 'NA'                                 
         self.husband_id: str = ''
         self.husband_name: str = 'TBD'
@@ -339,13 +339,25 @@ class GedcomFile:
         '''Husband in family should be male and wife in family should be female'''
         r = list()
         for fm in self._family_dt.values():
-            if fm.husband_id != 'NA' and fm.wife_id != 'NA':
-                if self._individual_dt[fm.husband_id].sex!= "M" or self._individual_dt[fm.wife_id].sex != "F":
-                    print(f"ANOMALY: US21: FAMILY:<{fm.family_id}> Couples'roles are not correct ")
-                    r.append(f"ANOMALY: US21: FAMILY:<{fm.family_id}> Couples'roles are not correct ")
+            try:
+                husband_sex = self._individual_dt[fm.husband_id].sex
+            except KeyError:
+                # Uninitialized husband ID. Skip it.
+                pass
             else:
-                print(f"ANOMALY: US21: FAMILY:<{fm.family_id}> Couples' roles are correct cannot compare  ")
-                r.append(f"ANOMALY: US21: FAMILY:<{fm.family_id}> Couples' roles are correct cannot compare  ")
+                if husband_sex != "M":
+                    print(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+                    r.append(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+
+            try:
+               wife_sex = self._individual_dt[fm.wife_id].sex
+            except KeyError:
+                # Uninitialized Wife ID. Skip it.
+                pass
+            else:
+                if wife_sex != "F":
+                    print(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+                    r.append(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")  
         return r
 
 
@@ -450,8 +462,8 @@ class GedcomFile:
 def main() -> None:
     '''Runs main program'''
 
-    # file_name: str = input('Enter GEDCOM file name: ')
-    file_name: str = "p1.ged"
+    file_name: str = input('Enter GEDCOM file name: ')
+    #file_name: str = "p1.ged"
     
     gedcom: GedcomFile = GedcomFile()
     gedcom.read_file(file_name)
