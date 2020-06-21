@@ -40,7 +40,7 @@ class Test_US35(unittest.TestCase):
         self.person.birth = datetime.datetime.date(self.today - datetime.timedelta(days=30))
         SSW555_Group_Project.GedcomFile.US35_list_recent_births(self.gedcom)
 
-        expected = "RECENT BIRTH: US35: Name: %s, Individual: ID %s, born %d days ago! Birthday: %s\n" \
+        expected = "ANOMALY: US35: Name: %s, Individual: ID %s, born %d days ago! Birthday: %s\n" \
                 %(self.person.name, self.person.id, 30, self.person.birth)
 
         self.assertEqual(mocked_stdout.getvalue(), expected)
@@ -51,7 +51,7 @@ class Test_US35(unittest.TestCase):
     def test_US35_0days(self,mocked_stdout):
         self.person.birth = datetime.date(self.today.year, self.today.month, self.today.day)       
         SSW555_Group_Project.GedcomFile.US35_list_recent_births(self.gedcom)
-        expected = "RECENT BIRTH: US35: Name: %s, Individual: ID %s, born %d days ago! Birthday: %s\n" \
+        expected = "ANOMALY: US35: Name: %s, Individual: ID %s, born %d days ago! Birthday: %s\n" \
                 %(self.person.name, self.person.id, 0, self.person.birth)
 
         self.assertEqual(mocked_stdout.getvalue(), expected)
@@ -280,7 +280,7 @@ class GedcomFileTest(unittest.TestCase):
         result = gedcom.US06_divorce_before_death()
 
         expect = [
-                   f"ANOMALY: US06: family:@F6@: Husband ID: @I14@ Husband Name: Jim /Halpert/ Divorced 2018-04-14 after wife's death:  ID: @I15@ Name: Pam /Halpert/ death date: 2018-04-13"
+                   f"ERROR: US06: family:@F6@: Husband ID: @I14@ Husband Name: Jim /Halpert/ Divorced 2018-04-14 after wife's death:  ID: @I15@ Name: Pam /Halpert/ death date: 2018-04-13"
                  ]
         self.assertEqual(expect, result)
 
@@ -296,7 +296,7 @@ class GedcomFileTest(unittest.TestCase):
         result = gedcom.US03_birth_death()
 
         expect = [ 
-                  f"ANOMALY: US03: Individual ID: @I13@ Name: Joe /Swanson/ has death date 2000-04-13 before birth 2000-04-14"
+                  f"ERROR: US03: Individual ID: @I13@ Name: Joe /Swanson/ has death date 2000-04-13 before birth 2000-04-14"
                  ]
 
         self.assertEqual(expect, result)
@@ -354,7 +354,7 @@ class TestUS04_US21(unittest.TestCase):
 
         result = self.gedcom.US4_Marriage_before_divorce()
         expect = [
-                  "ANOMALY:US04:FAMILY:<@F_Stest0> Divorce 1985-11-10 happens before marriage 1985-11-11 Husband: ID @I0@, Name Test Subject0  Wife: ID @I1@, Name Test Subject1" , 
+                  "ERROR:US04:FAMILY:<@F_Stest0> Divorce 1985-11-10 happens before marriage 1985-11-11 Husband: ID @I0@, Name Test Subject0  Wife: ID @I1@, Name Test Subject1" , 
                  ]
         self.assertEqual(result, expect)
 
@@ -385,10 +385,10 @@ class TestUS04_US21(unittest.TestCase):
 
         result = self.gedcom.US21_correct_gender_for_role()
         expect = [
-                  "ANOMALY: US21: FAMILY:<@F_Stest0> Incorrect sex for husband id: @I0@ name: Test Subject0 sex: F ",
-                  "ANOMALY: US21: FAMILY:<@F_Stest1> Incorrect sex for wife id: @I3@ name: Test Subject3 sex: M ",
-                  "ANOMALY: US21: FAMILY:<@F_Stest2> Incorrect sex for wife id: @I5@ name: Test Subject5 sex: BAD VALUE ",
-                  "ANOMALY: US21: FAMILY:<@F_Stest3> Incorrect sex for husband id: @I6@ name: Test Subject6 sex:  ",
+                  "ERROR: US21: FAMILY:<@F_Stest0> Incorrect sex for husband id: @I0@ name: Test Subject0 sex: F ",
+                  "ERROR: US21: FAMILY:<@F_Stest1> Incorrect sex for wife id: @I3@ name: Test Subject3 sex: M ",
+                  "ERROR: US21: FAMILY:<@F_Stest2> Incorrect sex for wife id: @I5@ name: Test Subject5 sex: BAD VALUE ",
+                  "ERROR: US21: FAMILY:<@F_Stest3> Incorrect sex for husband id: @I6@ name: Test Subject6 sex:  ",
                  ]
         self.assertEqual(result, expect)
 
