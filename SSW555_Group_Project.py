@@ -14,7 +14,7 @@ class Family:
         '''Initializes the details for an instance of a family'''
 
         self.id: str = ''
-        self.marriage_date: str = ''                         
+        self.marriage_date: str = 'NA'                         
         self.divorce_date: str = 'NA'                                 
         self.husband_id: str = ''
         self.husband_name: str = 'TBD'
@@ -317,8 +317,8 @@ class GedcomFile:
                 wife_name = self._individual_dt[wife_id].name                    
             except KeyError:
                 wife_name = "Unknown"  
-                
-            self._family_dt[entry].wife_name = wife_name
+            self._family_dt[entry].wife_name = wife_name        
+            
     def US03_birth_death(self):
         ''' Birth before death '''
         x = []
@@ -342,9 +342,48 @@ class GedcomFile:
                 if wd != 'NA' and v.divorce_date > wd:
                     print(f"ANOMALY: US06: {k}: Divorced {v.divorce_date} after partner's death {wd}")
                     x.append(k)
-        return x
+        return x            
+               
+            
+    def US4_Marriage_before_divorce(self): 
+        '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
+        r = list()
+        for id in self._family_dt:
+            marDate = self._family_dt[id].marriage_date
+            divDate = self._family_dt[id].divorce_date
+            if marDate == 'NA':
+                print(f"ANOMALY:US04:FAMILY:<{id}> No marriage date ")
+                r.append(f"ANOMALY:US04:FAMILY:<{id}> No marriage date ")
+            elif divDate != 'NA':
+                if marDate > divDate:
+                    print(f"ANOMALY:US04:FAMILY:<{id}> Divorce happens before marriage ")   
+                    r.append(f"ANOMALY:US04:FAMILY:<{id}> Divorce happens before marriage ")
+        return r
 
+    def US21_correct_gender_for_role(self):
+        '''Husband in family should be male and wife in family should be female'''
+        r = list()
+        for fm in self._family_dt.values():
+            try:
+                husband_sex = self._individual_dt[fm.husband_id].sex
+            except KeyError:
+                # Uninitialized husband ID. Skip it.
+                pass
+            else:
+                if husband_sex != "M":
+                    print(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+                    r.append(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
 
+            try:
+               wife_sex = self._individual_dt[fm.wife_id].sex
+            except KeyError:
+                # Uninitialized Wife ID. Skip it.
+                pass
+            else:
+                if wife_sex != "F":
+                    print(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")
+                    r.append(f"ANOMALY: US21: FAMILY:<{fm.id}> Couples'roles are not correct ")  
+        return r
 
     def US34_list_large_age_differences(self) -> None:
         '''US 34: List all couples who were married when the older spouse was more than twice as old as the younger spouse '''
@@ -426,7 +465,7 @@ class GedcomFile:
             for individual_id, name in GedcomFile._individuals_living_and_married.items():
                 pretty_table_for_living_and_married_people.add_row([individual_id, name])
         
-        print(f'All Individuals Living and Married:\n{pretty_table_for_living_and_married_people}\n')
+        print(f'\nUS30: All Individuals Living and Married:\n{pretty_table_for_living_and_married_people}\n')
 
     def list_individuals_living_over_thirty_never_married(self) -> None:
         '''US31: Prints a prettytable that lists all individuals that are alive, over 30 yrs old, and have never been married'''
@@ -440,14 +479,14 @@ class GedcomFile:
             for individual_id, name in GedcomFile._individuals_living_over_thirty_and_never_married.items():
                 pretty_table_for_living_over_thirty_never_married.add_row([individual_id, name])
         
-        print(f'All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
+        print(f'US31: All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
 
 
 def main() -> None:
     '''Runs main program'''
 
-    # file_name: str = input('Enter GEDCOM file name: ')
-    file_name: str = "p1.ged"
+    file_name: str = input('Enter GEDCOM file name: ')
+    #file_name: str = "p1.ged"
     
     gedcom: GedcomFile = GedcomFile()
     gedcom.read_file(file_name)
@@ -463,11 +502,14 @@ def main() -> None:
     # Print out User Story output from hereon
     gedcom.US34_list_large_age_differences()
     gedcom.US35_list_recent_births()
+    gedcom.US4_Marriage_before_divorce()
+    gedcom.US21_correct_gender_for_role()
 
     #US30 & #US31
     gedcom.parse_individuals_based_on_living_and_marital_details()
     gedcom.list_individuals_living_and_married()
     gedcom.list_individuals_living_over_thirty_never_married()
+    
 
 if __name__ == '__main__':
     main()
