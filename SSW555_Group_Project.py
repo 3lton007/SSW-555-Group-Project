@@ -421,8 +421,8 @@ class GedcomFile:
 def main() -> None:
     '''Runs main program'''
 
-    # file_name: str = input('Enter GEDCOM file name: ')
-    file_name: str = "p1.ged"
+    file_name: str = input('Enter GEDCOM file name: ')
+    #file_name: str = "p1.ged"
     
     gedcom: GedcomFile = GedcomFile()
     gedcom.read_file(file_name)
