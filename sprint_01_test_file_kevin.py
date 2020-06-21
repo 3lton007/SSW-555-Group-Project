@@ -10,7 +10,7 @@ class GedcomFileTest(unittest.TestCase):
         -Identifies all people that are living, over 30 yrs old, & have never been married
     '''
 
-    test_file_name: str = 'p1.ged'
+    test_file_name: str = 'test.ged'
 
     def test_all_people_living_and_married(self) -> None:
         '''Tests that the method correctly identifies all individuals, by ID and name, that are alive and married.
