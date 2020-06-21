@@ -14,7 +14,7 @@ class Family:
         '''Initializes the details for an instance of a family'''
 
         self.id: str = ''
-        self.marriage_date: str = ''                         
+        self.marriage_date: str = 'NA'                         
         self.divorce_date: str = 'NA'                                 
         self.husband_id: str = ''
         self.husband_name: str = 'TBD'
@@ -146,6 +146,15 @@ class Individual:
 
         return [self.id, self.name, self.sex, self.birth, self.age, self.living, self.death_date, (self.famc or "None"), (self.fams or "NA")]
 
+    def return_living_and_marital_details(self) -> Tuple[bool, int, str]:
+        '''Implemented for US30 & US31. 
+            Returns a tuple containing: individual's name as the first element, age as second element, a boolean as third element, and an int as the fourth element.
+            -The boolean is True if individual is living, False if not.
+            -The int reflects the # of families this individual has been a spouse of. If 0, the individual is/has not married. If greter than 0, the individual is married.
+        '''
+
+        return self.name, self.age, self.living, len(self.fams) 
+
 
 class GedcomFile:
     '''class GedcomFile'''
@@ -156,6 +165,8 @@ class GedcomFile:
     
     _individual_dt: Dict[str, Individual] = dict()
     _family_dt: Dict[str, Family] = dict()
+    _individuals_living_and_married: Dict[str, str] = dict()
+    _individuals_living_over_thirty_and_never_married: Dict[str, str] = dict()
 
     def __init__(self) -> None:
         '''Sets containers to store the input and output lines'''
@@ -219,7 +230,6 @@ class GedcomFile:
             if validity == 'Y':
                 self._validated_list.append([level, tag, arg])
 
-
     def parse_valid_entry(self) -> Tuple[str]:
         '''Generator to extract level, tag and argument from validated list'''
 
@@ -228,7 +238,6 @@ class GedcomFile:
             tag: str = valid_line[1]
             argument: str = valid_line[2]
             yield level, tag, argument
-
 
     def parse_validated_gedcom(self) -> None:
         '''Parses the gedcom entries for individuals and families'''
@@ -308,16 +317,183 @@ class GedcomFile:
                 wife_name = self._individual_dt[wife_id].name                    
             except KeyError:
                 wife_name = "Unknown"  
-                
-            self._family_dt[entry].wife_name = wife_name 
+            self._family_dt[entry].wife_name = wife_name        
+            
+    def US03_birth_death(self):
+        ''' Birth before death '''
+        x = []
+        for k, v in self._individual_dt.items():
+            if v.death_date != 'NA' and v.birth != 'NA':
+                if(v.death_date < v.birth):
+                    output = f"ANOMALY: US03: Individual ID: {k} Name: {v.name} has death date {v.death_date} before birth {v.birth}"
+                    print(output)
+                    x.append(output)
+        return x
 
+    def US06_divorce_before_death(self):
+        '''Divorce can take place only before death of both individuals '''
+        x = []
+        for k, v in self._family_dt.items():
+            if v.divorce_date != 'NA':
+                hd = self._individual_dt[v.husband_id].death_date
+                wd = self._individual_dt[v.wife_id].death_date
+                if hd != 'NA' and v.divorce_date > hd:
+                    output = f"ANOMALY: US06: family:{k}: Wife ID: {v.wife_id} Wife Name: {v.wife_name} Divorced {v.divorce_date} after husband's death:  ID: {v.husband_id} Name: {v.husband_name} death date: {hd}"
+                    print(output)
+                    x.append(output)
+                if wd != 'NA' and v.divorce_date > wd:
+                   output = f"ANOMALY: US06: family:{k}: Husband ID: {v.husband_id} Husband Name: {v.husband_name} Divorced {v.divorce_date} after wife's death:  ID: {v.wife_id} Name: {v.wife_name} death date: {wd}"
+                   print(output)
+                   x.append(output)
+        return x            
+               
+            
+    def US4_Marriage_before_divorce(self): 
+        '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
+        r = list()
+        for id in self._family_dt:
+            marDate = self._family_dt[id].marriage_date
+            divDate = self._family_dt[id].divorce_date
+            if divDate != 'NA' and marDate != 'NA':
+                if marDate > divDate:
+                    h_name = self._family_dt[id].husband_name
+                    h_id = self._family_dt[id].husband_id
+                    w_name = self._family_dt[id].wife_name
+                    w_id = self._family_dt[id].wife_id
+                    output = f"ANOMALY:US04:FAMILY:<{id}> Divorce {divDate} happens before marriage {marDate} Husband: ID {h_id}, Name {h_name}  Wife: ID {w_id}, Name {w_name}"  
+                    print(output)
+                    r.append(output)
+        return r
+
+    def US21_correct_gender_for_role(self):
+        '''Husband in family should be male and wife in family should be female'''
+        r = list()
+        for fm in self._family_dt.values():
+            try:
+                husband_sex = self._individual_dt[fm.husband_id].sex
+            except KeyError:
+                # Uninitialized husband ID. Skip it.
+                pass
+            else:
+                if husband_sex != "M":
+                    output = f"ANOMALY: US21: FAMILY:<{fm.id}> Incorrect sex for husband id: {fm.husband_id} name: {fm.husband_name} sex: {husband_sex} "
+                    print(output)
+                    r.append(output)
+
+            try:
+               wife_sex = self._individual_dt[fm.wife_id].sex
+            except KeyError:
+                # Uninitialized Wife ID. Skip it.
+                pass
+            else:
+                if wife_sex != "F":
+                    output = f"ANOMALY: US21: FAMILY:<{fm.id}> Incorrect sex for wife id: {fm.wife_id} name: {fm.wife_name} sex: {wife_sex} "
+                    print(output)
+                    r.append(output) 
+        return r
+
+    def US34_list_large_age_differences(self) -> None:
+        '''US 34: List all couples who were married when the older spouse was more than twice as old as the younger spouse '''
+        
+        for family in self._family_dt.values():
+            
+            try:
+                husband = self._individual_dt[family.husband_id]
+                wife = self._individual_dt[family.wife_id]
+            except KeyError:
+                #Individual doesn't exist, so skip this family.
+                continue
+
+            if type(husband.age) == str or type(wife.age) == str:
+                # A birthdate was not provided for one of the spouses. Skip this family.
+                continue
+            elif husband.age < 0 or wife.age < 0:
+                # Invalid age, so skip this family.
+                continue
+
+            if husband.age > (wife.age * 2):
+                husband_is_older = True
+            elif wife.age > (husband.age * 2):
+                husband_is_older = False
+            else:
+                # No need to report this married couple.
+                continue
+
+            # OK, if we're still here, then we have an Anomaly to report. 
+            print("ANOMALY: US34: FAMILY: %s " %family.id, end='')
+
+            if husband_is_older:
+                print("Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d" \
+                %(family.husband_name, family.husband_id, husband.age, family.wife_name,  family.wife_id, wife.age ))            
+            else:
+                print("Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d" \
+                %(family.wife_name, family.wife_id, wife.age, family.husband_name,  family.husband_id, husband.age ))
+
+    def US35_list_recent_births(self)->None:
+        '''US35: List all people in a GEDCOM file who were born in the last 30 days'''
+        for person in self._individual_dt.values():
+            birth_date = person.birth
+            if type(birth_date) != datetime.date:
+                # Invalid entry
+                continue
+            today = datetime.date.today()
+            age_days = (today - birth_date).days  # difference results in datetime.timedelta
+
+            if age_days < 0:
+                # Invalid birthdays (set in the future!). Skip this individual.
+                continue
+            
+            if age_days <= 30:
+                print("RECENT BIRTH: US35: Name: %s, Individual: ID %s, born %d days ago! Birthday: %s" \
+                %(person.name, person.id, age_days, birth_date))
+
+    def parse_individuals_based_on_living_and_marital_details(self) -> None:
+        '''US30 & US31: Identifies whether an individual is: Living and married, or Living, over 30 years old and has never been married. After identifying, stores the 
+            individuals ID and Name in either the _individuals_living_and_married dictionary or the _individuals_living_over_thirty_and_never_married dictionary'''
+        
+        for individual_id, individual in self._individual_dt.items():
+            name, age, alive, number_of_times_married = individual.return_living_and_marital_details()
+            
+            if alive == True and number_of_times_married > 0:
+                GedcomFile._individuals_living_and_married[individual_id] = name
+            
+            elif alive == True and age > 30 and number_of_times_married == 0:
+                GedcomFile._individuals_living_over_thirty_and_never_married[individual_id] = name
+
+    def list_individuals_living_and_married(self) -> None:
+        '''US30: Prints a prettytable that lists all individuals that are alive and married'''
+
+        pretty_table_for_living_and_married_people: PrettyTable = PrettyTable(field_names=['ID', 'Name'])
+
+        if len(GedcomFile._individuals_living_and_married) == 0:
+            pretty_table_for_living_and_married_people.add_row(['None', 'None'])
+        
+        else:
+            for individual_id, name in GedcomFile._individuals_living_and_married.items():
+                pretty_table_for_living_and_married_people.add_row([individual_id, name])
+        
+        print(f'\nUS30: All Individuals Living and Married:\n{pretty_table_for_living_and_married_people}\n')
+
+    def list_individuals_living_over_thirty_never_married(self) -> None:
+        '''US31: Prints a prettytable that lists all individuals that are alive, over 30 yrs old, and have never been married'''
+
+        pretty_table_for_living_over_thirty_never_married: PrettyTable = PrettyTable(field_names=['ID', 'Name'])
+
+        if len(GedcomFile._individuals_living_over_thirty_and_never_married) == 0:
+            pretty_table_for_living_over_thirty_never_married.add_row(['None', 'None'])
+        
+        else:
+            for individual_id, name in GedcomFile._individuals_living_over_thirty_and_never_married.items():
+                pretty_table_for_living_over_thirty_never_married.add_row([individual_id, name])
+        
+        print(f'US31: All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
 
 
 def main() -> None:
     '''Runs main program'''
 
-    # file_name: str = input('Enter GEDCOM file name: ')
-    file_name: str = "p1.ged"
+    file_name: str = input('Enter GEDCOM file name: ')
+    #file_name: str = "p1.ged"
     
     gedcom: GedcomFile = GedcomFile()
     gedcom.read_file(file_name)
@@ -330,6 +506,19 @@ def main() -> None:
     gedcom.print_individuals_pretty()
     gedcom.print_family_pretty()
 
+    # Print out User Story output from hereon
+    gedcom.US34_list_large_age_differences()
+    gedcom.US35_list_recent_births()
+    gedcom.US4_Marriage_before_divorce()
+    gedcom.US21_correct_gender_for_role()
+
+    #US30 & #US31
+    gedcom.parse_individuals_based_on_living_and_marital_details()
+    gedcom.list_individuals_living_and_married()
+    gedcom.list_individuals_living_over_thirty_never_married()
+    
+    gedcom.US03_birth_death()
+    gedcom.US06_divorce_before_death()
 
 if __name__ == '__main__':
     main()
