@@ -347,6 +347,22 @@ class GedcomFile:
                    x.append(output)
         return x            
                
+    def US07_Death150(self):
+        ''' Death for all dead people and currently living must be less than 150'''
+        x = []
+
+        for k, v in self._individual_dt.items():
+            if v.age != 'NA' and v.age >= 150:
+                output = f"ERROR: US07: Individual ID: {k} Name: {v.name} is more more than 150 years old!"
+
+                if v.death_date != 'NA':
+                    output += f"ERROR Individual ID: {k} Name: {v.name} Death date is Not Availale {v.death_date}"
+
+                print(output)
+                x.append(output)
+        return x
+
+
             
     def US4_Marriage_before_divorce(self): 
         '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
@@ -487,6 +503,8 @@ class GedcomFile:
                 pretty_table_for_living_over_thirty_never_married.add_row([individual_id, name])
         
         print(f'US31: All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
+    
+    
 
 
 def main() -> None:
@@ -519,6 +537,7 @@ def main() -> None:
     
     gedcom.US03_birth_death()
     gedcom.US06_divorce_before_death()
+    gedcom.US07_Death150()
 
 if __name__ == '__main__':
     main()
