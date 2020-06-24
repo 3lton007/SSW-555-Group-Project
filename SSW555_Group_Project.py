@@ -1,5 +1,3 @@
-'''The purpose of this program is to identify errors and anomalies in GEDCOM geneology files'''
-
 from typing import Iterator, Tuple, IO, List, Dict, Set
 from collections import defaultdict
 import datetime
@@ -347,7 +345,44 @@ class GedcomFile:
                    x.append(output)
         return x            
                
-            
+    def US2_birth_before_marriage(self):
+        ''''Birth should occur before marriage of an individual'''
+        r = list()
+        for id in self._family_dt.keys():
+            if self._family_dt[id].marriage_date != 'NA' and self._family_dt[id].children !='NA':
+                marDate = datetime.datetime.strptime(str(self._family_dt[id].marriage_date), '%Y-%m-%d')
+                for cid in self._family_dt[id].children:
+                    if self._individual_dt[cid].birth == 'NA':
+                        continue
+                    else:
+                        brthDate = datetime.datetime.strptime(str(self._individual_dt[cid].birth),'%Y-%m-%d')
+                        if brthDate < marDate:
+                            output =f"ERROR: US2: FAMILY:<{id}>  childID: <{cid}> borth {brthDate} before marriage date {marDate}"
+                            print(output)
+                            r.append(output)
+        return r
+
+    def US5_marriage_before_death(self):
+        '''Marriage should occur before death of either spouse'''
+        r = list()
+        for id in self._family_dt.keys():
+            if self._family_dt[id].marriage_date != 'NA':
+                marDate = datetime.datetime.strptime(str(self._family_dt[id].marriage_date), '%Y-%m-%d')
+                indi_ddates = {} #inidvidual death dates dic 
+                husID = self._family_dt[id].husband_id
+                wifeID = self._family_dt[id].wife_id
+                indi_ddates[husID] = self._individual_dt[husID].death_date
+                indi_ddates[wifeID] = self._individual_dt[wifeID].death_date
+                for ids, vals in indi_ddates.items():
+                     if vals !='N/A': # to find death date for each indivdual 
+                         deathDate = datetime.datetime.strptime(str(vals),'%Y-%m-%d')
+                         if deathDate < marDate: #Compare if  death date for inidvidual happens before marriage date 
+                             output = f"Error:US5, Family <{id}> Individual  {ids} dies  on {deathDate} before marriage date on {marDate}"
+                             print(output)
+                             r.append(output)
+        return r
+
+
     def US4_Marriage_before_divorce(self): 
         '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
         r = list()
@@ -511,6 +546,8 @@ def main() -> None:
     gedcom.US35_list_recent_births()
     gedcom.US4_Marriage_before_divorce()
     gedcom.US21_correct_gender_for_role()
+    gedcom.US2_birth_before_marriage()
+    gedcom.US5_marriage_before_death()
 
     #US30 & #US31
     gedcom.parse_individuals_based_on_living_and_marital_details()
