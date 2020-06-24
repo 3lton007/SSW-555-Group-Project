@@ -376,7 +376,6 @@ class GedcomFile:
                 for ids, vals in indi_ddates.items():
                      if vals !='NA': # to find death date for each indivdual 
                          deathDate = vals
-                         print(f"deathDate Type: {type(deathDate)} value : {deathDate}  marDate type: {type(marDate)} value: {marDate}")
                          if deathDate < marDate: #Compare if  death date for inidvidual happens before marriage date 
                              output = f"Error:US5, Family <{id}> Individual  {ids} dies  on {deathDate} before marriage date on {marDate}"
                              print(output)
