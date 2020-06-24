@@ -350,12 +350,12 @@ class GedcomFile:
         r = list()
         for id in self._family_dt.keys():
             if self._family_dt[id].marriage_date != 'NA' and self._family_dt[id].children !='NA':
-                marDate = datetime.datetime.strptime(str(self._family_dt[id].marriage_date), '%Y-%m-%d')
+                marDate = self._family_dt[id].marriage_date
                 for cid in self._family_dt[id].children:
                     if self._individual_dt[cid].birth == 'NA':
                         continue
                     else:
-                        brthDate = datetime.datetime.strptime(str(self._individual_dt[cid].birth),'%Y-%m-%d')
+                        brthDate = self._individual_dt[cid].birth
                         if brthDate < marDate:
                             output =f"ERROR: US2: FAMILY:<{id}>  childID: <{cid}> borth {brthDate} before marriage date {marDate}"
                             print(output)
@@ -367,15 +367,16 @@ class GedcomFile:
         r = list()
         for id in self._family_dt.keys():
             if self._family_dt[id].marriage_date != 'NA':
-                marDate = datetime.datetime.strptime(str(self._family_dt[id].marriage_date), '%Y-%m-%d')
+                marDate = self._family_dt[id].marriage_date
                 indi_ddates = {} #inidvidual death dates dic 
                 husID = self._family_dt[id].husband_id
                 wifeID = self._family_dt[id].wife_id
                 indi_ddates[husID] = self._individual_dt[husID].death_date
                 indi_ddates[wifeID] = self._individual_dt[wifeID].death_date
                 for ids, vals in indi_ddates.items():
-                     if vals !='N/A': # to find death date for each indivdual 
-                         deathDate = datetime.datetime.strptime(str(vals),'%Y-%m-%d')
+                     if vals !='NA': # to find death date for each indivdual 
+                         deathDate = vals
+                         print(f"deathDate Type: {type(deathDate)} value : {deathDate}  marDate type: {type(marDate)} value: {marDate}")
                          if deathDate < marDate: #Compare if  death date for inidvidual happens before marriage date 
                              output = f"Error:US5, Family <{id}> Individual  {ids} dies  on {deathDate} before marriage date on {marDate}"
                              print(output)
