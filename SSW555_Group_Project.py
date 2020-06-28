@@ -489,6 +489,78 @@ class GedcomFile:
         print(f'US31: All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
 
 
+    def find_deceased_past30days(self):
+        result = list()
+        for person in self._individual_dt.values():
+            death_date = person.death_date
+            if type(death_date) != datetime.date:
+                # Invalid entry. Death date never logged, so skip this individual.
+                continue
+            today = datetime.date.today()
+            days_since_death = (today - death_date).days  # difference results in datetime.timedelta
+
+            if days_since_death < 0:
+                # Invalid death date (set in the future!). Skip this individual.
+                continue
+            elif days_since_death <= 30:
+                result.append(person.id)
+        return result
+
+    def US36_list_recent_deaths(self) -> None:
+        '''List all people who died in the last 30 days'''
+        recently_deceased_lst = self.find_deceased_past30days()
+
+        pt_recently_deceased: PrettyTable = PrettyTable(field_names=['ID', 'Name', "Death Date"])
+
+        for id in recently_deceased_lst:
+            pt_recently_deceased.add_row([id, self._individual_dt[id].name, self._individual_dt[id].death_date])
+
+        print(f'\nUS36: Recently deceased:\n{pt_recently_deceased}\n')
+        return pt_recently_deceased
+
+
+
+    def walk_down_family_tree(self, family, descendant_lst) -> None:
+        '''Recursive method for finding all descendants'''
+        for child_id in self._family_dt[family].children:
+            descendant_lst.append(child_id)
+            for fam in self._individual_dt[child_id].fams:
+                self.walk_down_family_tree(fam, descendant_lst)
+
+
+    def US37_list_recent_survivors(self) -> None:
+        '''List all living spouses/descendants of people who died in last 30 days'''
+        recently_deceased_lst = self.find_deceased_past30days()
+
+        if len(recently_deceased_lst) > 0:
+            print("US37: Survivors of recently deceased")
+
+            pt_survivors: PrettyTable = PrettyTable(field_names=['Recently Deceased ID', 'Recently Deceased Name', 'Surviver ID', 'Surviver Name', "Relationship to Deceased", "Family"])
+
+        for d_id in recently_deceased_lst:
+            for spousefamid in self._individual_dt[d_id].fams:
+                if d_id == self._family_dt[spousefamid].wife_id:
+                    spouseid = self._family_dt[spousefamid].husband_id
+                else:
+                    spouseid = self._family_dt[spousefamid].wife_id
+                
+                if self._individual_dt[spouseid].living:
+                    if self._family_dt[spousefamid].divorce_date != 'NA':
+                        Prefix = "Ex-"
+                    else:
+                        Prefix = ""
+                    pt_survivors.add_row([d_id, self._individual_dt[d_id].name, spouseid, self._individual_dt[spouseid].name, Prefix+"Spouse", spousefamid])
+                
+                d_lst = list()
+                self.walk_down_family_tree(spousefamid, d_lst)
+                for descendant in d_lst:
+                    if self._individual_dt[descendant].living:
+                        pt_survivors.add_row([d_id, self._individual_dt[d_id].name, descendant, self._individual_dt[descendant].name, "Descendant", spousefamid])
+
+        print(pt_survivors)
+        return pt_survivors
+
+
 def main() -> None:
     '''Runs main program'''
 
@@ -519,6 +591,9 @@ def main() -> None:
     
     gedcom.US03_birth_death()
     gedcom.US06_divorce_before_death()
+
+    gedcom.US36_list_recent_deaths()
+    gedcom.US37_list_recent_survivors()
 
 if __name__ == '__main__':
     main()
