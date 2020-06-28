@@ -264,6 +264,7 @@ class GedcomFileTest(unittest.TestCase):
         expected: Dict[str, str] = {
                                     '@A3@' : 'Peter /Parker/',
                                     '@I8@' : 'Manuel /Rivera/',
+                                    '@K4@' : 'Mike /Sam/',
                                    }
 
         self.assertEqual(result, expected)
@@ -301,7 +302,32 @@ class GedcomFileTest(unittest.TestCase):
 
         self.assertEqual(expect, result)
 
+    def test_US28_order_siblings_by_age(self) -> None:
+        '''tests that the method implemented for US28 correctly orders sibling for every family: from Oldest to Youngest'''
 
+        gedcom: GedcomFile = GedcomFile()
+        gedcom.read_file(GedcomFileTest.test_file_name)
+        gedcom.validate_tags_for_output()
+        
+        gedcom.update_validated_list()
+        gedcom.parse_validated_gedcom()
+        gedcom.family_set_spouse_names()
+        
+        result: List[List[str]] = gedcom.US28_list_all_siblings_from_oldest_to_youngest()
+        
+        expected: List[List[str]] = [
+
+                                    ['@F1@', '@K1@', 'Sally /Sam/', 30],
+                                    ['@F1@', '@I1@', 'Siva /Sam/', 26],
+                                    ['@F1@', '@K2@', 'Amanda /Sam/', 18],
+                                    ['@F2@', '@K4@', 'Mike /Sam/', 35],
+                                    ['@F2@', '@K3@', 'Joe /Sam/', 24],
+                                    ['@F2@', '@I7@', 'Ram /Sam/', 22],
+                                
+                                    ]
+                                   
+
+        self.assertEqual(result, expected)
 
 
 

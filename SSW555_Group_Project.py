@@ -489,6 +489,40 @@ class GedcomFile:
         print(f'US31: All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
 
 
+    def US28_list_all_siblings_from_oldest_to_youngest(self) -> List[List[str]]:
+        '''Lists all siblings in a family from oldest to youngest'''
+
+        pretty_table_for_all_siblings: PrettyTable = PrettyTable(field_names = ['Family ID', 'Child ID', 'Child Name', 'Child Age'])
+        all_siblings: List[List[str]] = list()
+
+        for siblings in self.US28_order_siblings_by_age():
+            all_siblings.append(siblings)
+            pretty_table_for_all_siblings.add_row(siblings)
+ 
+        print(f'\nUS28: All Siblings Ordered by Age From Oldest to Youngest:\n{pretty_table_for_all_siblings}\n')
+        return all_siblings
+
+    def US28_order_siblings_by_age(self) -> Iterator[List[List[str]]]:
+        '''US28: Orders the siblings in each family by age from oldest to youngest''' 
+
+        family_siblings: List[str] = list()
+
+        for family_id, family in self._family_dt.items():
+            fam_id: str = family_id
+            children: Set[str] = family.children
+
+            if len(children) > 1:
+                for child_id in children:
+                    name: str = self._individual_dt[child_id].name
+                    age: str = self._individual_dt[child_id].age
+                    family_siblings.append([fam_id, child_id, name, age])
+
+                for siblings_sorted_by_age in sorted(family_siblings, reverse = True, key = lambda n: n[-1]):
+                    yield siblings_sorted_by_age
+
+                family_siblings = list()
+
+
 def main() -> None:
     '''Runs main program'''
 
@@ -519,6 +553,8 @@ def main() -> None:
     
     gedcom.US03_birth_death()
     gedcom.US06_divorce_before_death()
+
+    gedcom.US28_list_all_siblings_from_oldest_to_youngest()
 
 if __name__ == '__main__':
     main()
