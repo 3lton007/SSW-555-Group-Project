@@ -394,7 +394,27 @@ class TestUS04_US21(unittest.TestCase):
 
 
 
+    def test_US02_birth_before_marraige(self):
+        gedcom: GedcomFile = GedcomFile()
+        gedcom.read_file(GedcomFileTest.test_file_name)
+        gedcom.validate_tags_for_output()
+        gedcom.update_validated_list()
+        gedcom.parse_validated_gedcom()
+        gedcom.family_set_spouse_names()
+        result = gedcom.US2_birth_before_marriage()
+        expect = ["ERROR: US2: FAMILY:@F10@"]
+        self.assertEqual(expect, result)
 
+    def test_US5_marriage_before_death(self):
+        gedcom: GedcomFile = GedcomFile()
+        gedcom.read_file(GedcomFileTest.test_file_name)
+        gedcom.validate_tags_for_output()
+        gedcom.update_validated_list()
+        gedcom.parse_validated_gedcom()
+        gedcom.family_set_spouse_names()
+        result = gedcom.US5_marriage_before_death()
+        expect = ["Error:US5, Family @F5@"]
+        self.assertEqual(expect, result)
 
 
 
