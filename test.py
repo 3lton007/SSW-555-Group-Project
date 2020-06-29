@@ -87,7 +87,6 @@ class Test_US35(unittest.TestCase):
 
 
 class Test_US34(unittest.TestCase):
-    test_subjects = list()
 
     def setUp(self):
         self.maxDiff = None
@@ -119,20 +118,10 @@ class Test_US34(unittest.TestCase):
                 self.family.wife_id = self.person.id
                 self.family.wife_name = self.person.name
 
-            SSW555_Group_Project.GedcomFile._individual_dt[self.person.id] = self.person
-
-        self.log = logging.getLogger("Test")
-
-    def print_testcasedetails(self,expected,actual):
-        if TC_VERBOSE==True:
-            self.log.debug("Test Case: %s",self.id())
-            self.log.debug("Expected Value: %s" %expected)
-            self.log.debug("  Actual Value: %s" %actual)
-            self.log.debug("Test Passed? %s" %(expected==actual))         
+            SSW555_Group_Project.GedcomFile._individual_dt[self.person.id] = self.person     
 
 
-    @unittest.mock.patch('sys.stdout', new_callable=io.StringIO)
-    def test_US34_spouseExactly2xAge(self,mocked_stdout):
+    def test_US34_spouseExactly2xAge(self):
         husband_age = 18
         wife_age = husband_age * 2
         SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].age = husband_age
@@ -143,17 +132,15 @@ class Test_US34(unittest.TestCase):
         SSW555_Group_Project.GedcomFile._individual_dt["@I2@"].age = husband_age
         SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].age = wife_age
 
-        SSW555_Group_Project.GedcomFile.US34_list_large_age_differences(self.gedcom)
+        actual = SSW555_Group_Project.GedcomFile.US34_list_large_age_differences(self.gedcom)
 
         expected = ""
-
-        self.assertEqual(mocked_stdout.getvalue(), expected)
-        self.print_testcasedetails(expected, mocked_stdout.getvalue())
-
+        self.assertEqual(expected, actual)
+        
 
 
-    @unittest.mock.patch('sys.stdout', new_callable=io.StringIO)
-    def test_US34_spouseGreater2xAge(self,mocked_stdout):
+
+    def test_US34_spouseGreater2xAge(self):
         husband_age = 18
         wife_age = (husband_age * 2) + 1
         SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].age = husband_age
@@ -162,7 +149,7 @@ class Test_US34(unittest.TestCase):
         wife_name = SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].name
         family_id = SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].fams
         
-        expected_1 = "ANOMALY: US34: FAMILY: %s Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d" \
+        expected_1 = "ANOMALY: US34: FAMILY: %s Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d\n" \
             %(family_id, wife_name, "@I1@", wife_age, husband_name,  "@I0@", husband_age )
 
         wife_age = 35
@@ -173,19 +160,17 @@ class Test_US34(unittest.TestCase):
         wife_name = SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].name
         family_id = SSW555_Group_Project.GedcomFile._individual_dt["@I2@"].fams
 
-        expected_2 = "ANOMALY: US34: FAMILY: %s Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d" \
+        expected_2 = "ANOMALY: US34: FAMILY: %s Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d\n" \
             %(family_id, husband_name, "@I2@", husband_age, wife_name,  "@I3@", wife_age ) 
 
-        expected = expected_1 + "\n" + expected_2 + "\n"
+        expected = expected_1 + expected_2
 
-        SSW555_Group_Project.GedcomFile.US34_list_large_age_differences(self.gedcom)
+        actual = SSW555_Group_Project.GedcomFile.US34_list_large_age_differences(self.gedcom)
 
-        self.assertEqual(mocked_stdout.getvalue(), expected)
-        self.print_testcasedetails(expected, mocked_stdout.getvalue())
+        self.assertEqual(expected, actual)
 
 
-    @unittest.mock.patch('sys.stdout', new_callable=io.StringIO)
-    def test_US34_spouseNegAge(self,mocked_stdout):
+    def test_US34_spouseNegAge(self):
         husband_age = -18
         wife_age = -8
         SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].age = husband_age
@@ -198,10 +183,10 @@ class Test_US34(unittest.TestCase):
 
         expected = ""
 
-        SSW555_Group_Project.GedcomFile.US34_list_large_age_differences(self.gedcom)
+        actual = SSW555_Group_Project.GedcomFile.US34_list_large_age_differences(self.gedcom)
 
-        self.assertEqual(mocked_stdout.getvalue(), expected)
-        self.print_testcasedetails(expected, mocked_stdout.getvalue())
+        self.assertEqual(expected, actual)
+        
 
 
 

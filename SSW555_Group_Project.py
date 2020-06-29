@@ -392,9 +392,9 @@ class GedcomFile:
                     r.append(output) 
         return r
 
-    def US34_list_large_age_differences(self) -> None:
+    def US34_list_large_age_differences(self):
         '''US 34: List all couples who were married when the older spouse was more than twice as old as the younger spouse '''
-        
+        output = ""
         for family in self._family_dt.values():
             
             try:
@@ -420,14 +420,16 @@ class GedcomFile:
                 continue
 
             # OK, if we're still here, then we have an Anomaly to report. 
-            print("ANOMALY: US34: FAMILY: %s " %family.id, end='')
+            output += f"ANOMALY: US34: FAMILY: {family.id} "
 
             if husband_is_older:
-                print("Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d" \
-                %(family.husband_name, family.husband_id, husband.age, family.wife_name,  family.wife_id, wife.age ))            
+                output += f"Name: {family.husband_name}, id: {family.husband_id}, age: {husband.age} is more than 2x in age as spouse: {family.wife_name}, id: {family.wife_id}, age: {wife.age}\n"        
             else:
-                print("Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d" \
-                %(family.wife_name, family.wife_id, wife.age, family.husband_name,  family.husband_id, husband.age ))
+                output += f"Name: {family.wife_name}, id: {family.wife_id}, age: {wife.age} is more than 2x in age as spouse: {family.husband_name}, id: {family.husband_id}, age: {husband.age}\n"
+        
+        print(output, end="")
+        return output
+            
 
     def US35_list_recent_births(self)->None:
         '''US35: List all people in a GEDCOM file who were born in the last 30 days'''
