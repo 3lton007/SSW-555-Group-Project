@@ -7,6 +7,7 @@ import sys
 import logging
 from typing import IO, Dict
 from SSW555_Group_Project import Individual, GedcomFile
+from prettytable import PrettyTable
 
 # Set True if you want to see expected/actual values.
 TC_VERBOSE = False
@@ -391,6 +392,170 @@ class TestUS04_US21(unittest.TestCase):
                   "ERROR: US21: FAMILY:<@F_Stest3> Incorrect sex for husband id: @I6@ name: Test Subject6 sex:  ",
                  ]
         self.assertEqual(result, expect)
+
+
+
+
+
+
+
+class TestUS36_US37(unittest.TestCase):
+    def setUp(self):
+        SSW555_Group_Project.GedcomFile._individual_dt.clear()
+        SSW555_Group_Project.GedcomFile._family_dt.clear()
+        self.gedcom = SSW555_Group_Project.GedcomFile()
+
+        # Create 6 pairs husband/wife. This creates the individuals and families.
+        for i in range(0,(6*2)):
+
+            if i%2 == 0:
+                family = SSW555_Group_Project.Family()
+                family.id = "@F_test" + str(i//2)
+                SSW555_Group_Project.GedcomFile._family_dt[family.id] = family
+
+            person = SSW555_Group_Project.Individual()
+            person.id = "@I" + str(i) + "@"
+            person.name = "Test " + "Subject"+ str(i)
+            person.fams = set({"@F_test" + str(i//2)})
+
+            if i%2 == 0:
+                person.sex = "M"
+                family.husband_id = person.id
+                family.husband_name = person.name
+            else:
+                person.sex = "F"
+                family.wife_id = person.id
+                family.wife_name = person.name
+
+            SSW555_Group_Project.GedcomFile._individual_dt[person.id] = person
+
+        self.log = logging.getLogger("Test")
+        self.today = datetime.datetime.today()
+
+    def test_US36_recently_deceased(self):
+        # Initialize Inputs 
+        SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=29))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=30))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I2@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=31))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=0))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I4@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=365*40))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I5@"].death_date =  datetime.datetime.date(self.today + datetime.timedelta(days=1))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I6@"].death_date =  datetime.datetime.date(self.today + datetime.timedelta(days=365*40))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I7@"].death_date =  ""
+        SSW555_Group_Project.GedcomFile._individual_dt["@I8@"].death_date =  "NA"
+        SSW555_Group_Project.GedcomFile._individual_dt["@I9@"].death_date =  "28 JAN 1940"
+
+        #Initialize expected results. 
+        # We expect only the death dates that fall within the past 30 days. Therefore, @I0@, @I1@, and @I3@
+        expected_results = list()
+        expected_results.append(["@I0@", SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].name, SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].death_date])
+        expected_results.append(["@I1@", SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].name, SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].death_date])
+        expected_results.append(["@I3@", SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].name, SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].death_date])
+
+        #Invoke method under test 
+        actual = self.gedcom.find_deceased_within30days()
+        
+        for entry in expected_results:
+            self.assertEqual(True, entry in actual)
+
+        expected_pt: PrettyTable = PrettyTable(field_names=['ID', 'Name', "Death Date"])
+        
+        for entry in expected_results:
+            expected_pt.add_row(entry)
+        expected_pt.sortby = "Death Date"
+        
+        actual_pt = self.gedcom.US36_list_recent_deaths()
+
+        self.assertEqual(expected_pt.get_string(), actual_pt.get_string())
+
+
+    def US37_recent_survivors_3Generations(self, divorced):
+        # Initialize Inputs 
+        # Define the following 3-generation Family:
+        # @F_Test0: Husband:@I0@  Wife: @I1@  children: @I2@.  In this family, Husband is deceased recently.
+        #   @F_Test1: Husband:@I2@  Wife: @I3@  children: @I4@
+        #       @F_Test2: Husband:@I4@  Wife: @I5@  children: @I6@ @I8@ @I10@. In this family, @I10@ is deceased.
+        #
+        # Therefore Descendants of @I0@ are Children (@I2@), grand children (@I4@), and great-grand-children (@I6@, @I8@, @I10@) 
+        #
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test0"].children = set({"@I2@"})
+
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test1"].husband_id = "@I2@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test1"].wife_id =    "@I3@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test1"].children = set({"@I4@"})
+
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test2"].husband_id = "@I4@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test2"].wife_id =    "@I5@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test2"].children = set({"@I6@", "@I8@", "@I10@"})
+
+        SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=29))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I10@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=31))
+
+        if divorced:
+            SSW555_Group_Project.GedcomFile._family_dt["@F_test0"].divorce_date = SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].death_date - datetime.timedelta(days=500)
+
+        #Initialize expected results. 
+        # Define ALL Descendants.
+        expected_descendants = ["@I2@", "@I4@", "@I6@", "@I8@", "@I10@"]
+
+        #for family in SSW555_Group_Project.GedcomFile._family_dt.values():
+        #    print(family.__dict__)
+
+        #Invoke method under test 
+        actual_descendants = list()
+        self.gedcom.walk_down_family_tree("@F_test0", actual_descendants)
+
+        for entry in expected_descendants:
+            self.assertEqual(True, entry in actual_descendants)
+
+
+        # OK, now let's test the pretty table of recent survivors. We expect the same individuals, except for @I10@ which is deceased.
+        expected_pt = PrettyTable(field_names=['Recently Deceased ID', 'Recently Deceased Name', 'Surviver ID', 'Surviver Name', "Relationship to Deceased"])
+
+        # Start by adding the spouse:
+        if divorced:
+            expected_pt.add_row([
+                                    SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].id,
+                                    SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].name,
+                                    SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].id,
+                                    SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].name,
+                                    "Ex-Spouse"
+                            ])
+        else:
+            expected_pt.add_row([
+                                    SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].id,
+                                    SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].name,
+                                    SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].id,
+                                    SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].name,
+                                    "Spouse"
+                            ])
+        for entry in expected_descendants:
+            expected_pt.add_row([
+                                 SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].id,
+                                 SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].name,
+                                 SSW555_Group_Project.GedcomFile._individual_dt[entry].id,
+                                 SSW555_Group_Project.GedcomFile._individual_dt[entry].name,
+                                 "Descendant"
+                                ])
+        expected_pt.sortby = "Recently Deceased ID"
+
+
+        actual_pt = self.gedcom.US37_list_recent_survivors()
+
+        self.assertEqual(expected_pt.get_string(), actual_pt.get_string())
+
+
+
+    def test_US37_recent_survivors_3Generations_married(self):
+        self.US37_recent_survivors_3Generations(False)
+
+    def test_US37_recent_survivors_3Generations_divorced(self):
+        self.US37_recent_survivors_3Generations(True)
+
+
+
 
 
 
