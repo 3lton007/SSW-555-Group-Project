@@ -80,7 +80,7 @@ class Individual:
         self.name: str = ''
         self.sex: str = ''
         self.birth: str = ''
-        self.age: str = ''
+        self.age: int = ''
         self.living: str = True
         self.death_date: str = 'NA'
         self.famc: Set[str] = set()

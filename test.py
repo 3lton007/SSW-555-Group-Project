@@ -329,6 +329,27 @@ class GedcomFileTest(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
+    def test_US27_setAge(self) -> None:
+        '''tests that the method implemented to set an individual's age correctly calculates age'''
+
+        person1: Individual = Individual()
+        person1.preceding_tag_related_to_date: str = 'BIRT'
+        person1.process_individual_record_date_tag('20 MAR 1991')
+
+        person2: Individual = Individual()
+        person2.preceding_tag_related_to_date: str = 'BIRT'
+        person2.process_individual_record_date_tag('6 JUN 1925')  
+        person2.preceding_tag_related_to_date: str = 'DEAT'
+        person2.process_individual_record_date_tag('28 JUN 2020')
+
+        person3: Individual = Individual()
+        person3.preceding_tag_related_to_date: str = 'BIRT'
+        person3.process_individual_record_date_tag('28 JUN 2020')  
+
+        result: List[str] = [person1.age, person2.age, person3.age]
+        expected: List[str] = [29, 95, 0]
+
+        self.assertEqual(result, expected)
 
 
 class TestUS04_US21(unittest.TestCase):
