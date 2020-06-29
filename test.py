@@ -413,7 +413,7 @@ class TestUS04_US21(unittest.TestCase):
         gedcom.parse_validated_gedcom()
         gedcom.family_set_spouse_names()
         result = gedcom.US5_marriage_before_death()
-        expect = ["Error:US5, Family @F5@"]
+        expect = ["Error:US5, Family @F8@"]
         self.assertEqual(expect, result)
 
 
