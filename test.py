@@ -238,8 +238,6 @@ class GedcomFileTest(unittest.TestCase):
                                     '@I20@' : 'Sammy /Paterson/',
                                     '@I21@' : 'Ran /Paterson/',
                                     '@I22@' :'Maya /Safi/',
-                                    '@I23@' :'Redah /Mo/',
-                                    '@I24@' :'Rose /Mo/',
                                     '@I2@' : 'Sankar /Sam/',
                                     '@I3@' : 'Sunitha /Krish/',
                                     '@I5@' : 'Baby /Chung/',
@@ -405,7 +403,7 @@ class TestUS04_US21(unittest.TestCase):
         gedcom.parse_validated_gedcom()
         gedcom.family_set_spouse_names()
         result = gedcom.US2_birth_before_marriage()
-        expect = ["ERROR: US2: FAMILY:@F8@"]
+        expect = ["ERROR: US2: FAMILY: @F8@"]
         self.assertEqual(expect, result)
 
     def test_US5_marriage_before_death(self):
@@ -416,7 +414,7 @@ class TestUS04_US21(unittest.TestCase):
         gedcom.parse_validated_gedcom()
         gedcom.family_set_spouse_names()
         result = gedcom.US5_marriage_before_death()
-        expect = ["ERROR: US5: FAMILY:@F10@"]
+        expect = ["ERROR: US5: FAMILY:@F10@", "ERROR: US5: FAMILY:@F10@"]
         self.assertEqual(expect, result)
 
 
