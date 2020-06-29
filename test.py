@@ -491,7 +491,9 @@ class TestUS36_US37(unittest.TestCase):
         SSW555_Group_Project.GedcomFile._family_dt["@F_test2"].children = set({"@I6@", "@I8@", "@I10@"})
 
         SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=29))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].living = False
         SSW555_Group_Project.GedcomFile._individual_dt["@I10@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=31))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I10@"].living = False
 
         if divorced:
             SSW555_Group_Project.GedcomFile._family_dt["@F_test0"].divorce_date = SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].death_date - datetime.timedelta(days=500)
@@ -499,9 +501,6 @@ class TestUS36_US37(unittest.TestCase):
         #Initialize expected results. 
         # Define ALL Descendants.
         expected_descendants = ["@I2@", "@I4@", "@I6@", "@I8@", "@I10@"]
-
-        #for family in SSW555_Group_Project.GedcomFile._family_dt.values():
-        #    print(family.__dict__)
 
         #Invoke method under test 
         actual_descendants = list()
@@ -532,6 +531,8 @@ class TestUS36_US37(unittest.TestCase):
                                     "Spouse"
                             ])
         for entry in expected_descendants:
+            if entry == "@I10@":
+                continue
             expected_pt.add_row([
                                  SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].id,
                                  SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].name,
@@ -556,8 +557,106 @@ class TestUS36_US37(unittest.TestCase):
 
 
 
+    def test_US37_recent_survivors_multiple_deaths(self):
+        # Initialize Inputs 
+        # Define the following 3-generation Family:
+        # @F_Test0: Husband:@I0@  Wife: @I1@  children: @I2@.  In this family, Husband is deceased recently.
+        #   @F_Test1: Husband:@I2@  Wife: @I3@  children: @I4@. In this family, Wife is deceased recently.
+        #       @F_Test2: Husband:@I4@  Wife: @I5@  children: @I6@ @I8@ @I10@. In this family, @I10@ is deceased.
+        #
+        # Therefore Descendants of @I0@ are Children (@I2@), grand children (@I4@), and great-grand-children (@I6@, @I8@, @I10@) 
+        #
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test0"].children = set({"@I2@"})
+
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test1"].husband_id = "@I2@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test1"].wife_id =    "@I3@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test1"].children = set({"@I4@"})
+
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test2"].husband_id = "@I4@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test2"].wife_id =    "@I5@"
+        SSW555_Group_Project.GedcomFile._family_dt["@F_test2"].children = set({"@I6@", "@I8@", "@I10@"})
+
+        SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=29))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].living = False
+        SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=1))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].living = False
+        SSW555_Group_Project.GedcomFile._individual_dt["@I10@"].death_date =  datetime.datetime.date(self.today - datetime.timedelta(days=31))
+        SSW555_Group_Project.GedcomFile._individual_dt["@I10@"].living = False
+
+        # Test the descendants method for the 1st family who had a recent death.
+        expected_descendants_1 = ["@I2@", "@I4@", "@I6@", "@I8@", "@I10@"]
+
+        #Invoke method under test 
+        actual_descendants_1 = list()
+        self.gedcom.walk_down_family_tree("@F_test0", actual_descendants_1)
+
+        for entry in expected_descendants_1:
+            self.assertEqual(True, entry in actual_descendants_1)
 
 
+        # Test the descendants method for the 2nd family who had a recent death
+        expected_descendants_2 = ["@I4@", "@I6@", "@I8@", "@I10@"]
+
+        #Invoke method under test 
+        actual_descendants_2 = list()
+        self.gedcom.walk_down_family_tree("@F_test1", actual_descendants_2)
+
+        for entry in expected_descendants_2:
+            self.assertEqual(True, entry in actual_descendants_2)
+
+
+
+
+
+        # OK, now let's test the pretty table of recent survivors. We expect the same individuals, except for @I10@ which is deceased.
+        expected_pt = PrettyTable(field_names=['Recently Deceased ID', 'Recently Deceased Name', 'Surviver ID', 'Surviver Name', "Relationship to Deceased"])
+
+        # Handle first family. Start by adding the spouse:
+        expected_pt.add_row([
+                                SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].id,
+                                SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].name,
+                                SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].id,
+                                SSW555_Group_Project.GedcomFile._individual_dt["@I1@"].name,
+                                "Spouse"
+                            ])
+        for entry in expected_descendants_1:
+            if entry == "@I10@":
+                continue
+            expected_pt.add_row([
+                                 SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].id,
+                                 SSW555_Group_Project.GedcomFile._individual_dt["@I0@"].name,
+                                 SSW555_Group_Project.GedcomFile._individual_dt[entry].id,
+                                 SSW555_Group_Project.GedcomFile._individual_dt[entry].name,
+                                 "Descendant"
+                                ])
+
+        
+        # Handle second family. Start by adding the spouse
+        expected_pt.add_row([
+                                SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].id,
+                                SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].name,
+                                SSW555_Group_Project.GedcomFile._individual_dt["@I2@"].id,
+                                SSW555_Group_Project.GedcomFile._individual_dt["@I2@"].name,
+                                "Spouse"
+                            ])
+        for entry in expected_descendants_2:
+            if entry == "@I10@":
+                continue
+            expected_pt.add_row([
+                                 SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].id,
+                                 SSW555_Group_Project.GedcomFile._individual_dt["@I3@"].name,
+                                 SSW555_Group_Project.GedcomFile._individual_dt[entry].id,
+                                 SSW555_Group_Project.GedcomFile._individual_dt[entry].name,
+                                 "Descendant"
+                                ])
+
+        expected_pt.sortby = "Recently Deceased ID"
+
+        actual_pt = self.gedcom.US37_list_recent_survivors()
+
+        self.assertEqual(expected_pt.get_string(), actual_pt.get_string())
 
 
 
