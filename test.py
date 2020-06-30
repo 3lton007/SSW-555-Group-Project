@@ -344,10 +344,14 @@ class GedcomFileTest(unittest.TestCase):
 
         person3: Individual = Individual()
         person3.preceding_tag_related_to_date: str = 'BIRT'
-        person3.process_individual_record_date_tag('28 JUN 2020')  
+        person3.process_individual_record_date_tag('28 JUN 2020')
 
-        result: List[str] = [person1.age, person2.age, person3.age]
-        expected: List[str] = [29, 95, 0]
+        person4: Individual = Individual()
+        person4.preceding_tag_related_to_date: str = 'BIRT'
+        person4.process_individual_record_date_tag('29 FEB 2000')
+
+        result: List[str] = [person1.age, person2.age, person3.age, person4.age]
+        expected: List[str] = [29, 95, 0, 20]
 
         self.assertEqual(result, expected)
 
