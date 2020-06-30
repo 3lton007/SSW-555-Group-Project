@@ -431,8 +431,9 @@ class GedcomFile:
         return output
             
 
-    def US35_list_recent_births(self)->None:
+    def US35_list_recent_births(self):
         '''US35: List all people in a GEDCOM file who were born in the last 30 days'''
+        output = ""
         for person in self._individual_dt.values():
             birth_date = person.birth
             if type(birth_date) != datetime.date:
@@ -446,8 +447,9 @@ class GedcomFile:
                 continue
             
             if age_days <= 30:
-                print("ANOMALY: US35: Name: %s, Individual: ID %s, born %d days ago! Birthday: %s" \
-                %(person.name, person.id, age_days, birth_date))
+                output += f"ANOMALY: US35: Name: {person.name}, Individual: ID {person.id}, born {age_days} days ago! Birthday: {birth_date}\n"
+        print(output, end="")
+        return output
 
     def parse_individuals_based_on_living_and_marital_details(self) -> None:
         '''US30 & US31: Identifies whether an individual is: Living and married, or Living, over 30 years old and has never been married. After identifying, stores the 
