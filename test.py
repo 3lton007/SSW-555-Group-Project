@@ -537,32 +537,6 @@ class main_testing(unittest.TestCase):
         for entry in expected_descendants_2:
             self.assertEqual(True, entry in actual_descendants_2)
 
-
-
-
-    def test_US02_birth_before_marraige(self):
-        gedcom: GedcomFile = GedcomFile()
-        gedcom.read_file(GedcomFileTest.test_file_name)
-        gedcom.validate_tags_for_output()
-        gedcom.update_validated_list()
-        gedcom.parse_validated_gedcom()
-        gedcom.family_set_spouse_names()
-        result = gedcom.US2_birth_before_marriage()
-        expect = ["ERROR: US2: FAMILY: @F8@"]
-        self.assertEqual(expect, result)
-
-
-    def test_US5_marriage_before_death(self):
-        gedcom: GedcomFile = GedcomFile()
-        gedcom.read_file(GedcomFileTest.test_file_name)
-        gedcom.validate_tags_for_output()
-        gedcom.update_validated_list()
-        gedcom.parse_validated_gedcom()
-        gedcom.family_set_spouse_names()
-        result = gedcom.US5_marriage_before_death()
-        expect = ["ERROR: US5: FAMILY:@F10@", "ERROR: US5: FAMILY:@F10@"]
-        self.assertEqual(expect, result)
-
         # OK, now let's test the pretty table of recent survivors. We expect the same individuals, except for @I10@ which is deceased.
         expected_pt = PrettyTable(field_names=['Recently Deceased ID', 'Recently Deceased Name', 'Surviver ID', 'Surviver Name', "Relationship to Deceased"])
 
@@ -613,6 +587,84 @@ class main_testing(unittest.TestCase):
 
 
 
+
+    def test_US02_birth_before_marriage(self):
+        # Family 0: birth of individual before their marriage by 1 day (Not possible, but not an error!)
+        GedcomFile._family_dt["@F_test0"].marriage_date = datetime.date(1985,11,11)
+        GedcomFile._individual_dt["@I0@"].birth = datetime.date(1985,11,10)
+
+        # Family 2: birth of individual after their marriage by 1 day (Error Expected)
+        GedcomFile._family_dt["@F_test1"].marriage_date = datetime.date(1985,11,11)
+        GedcomFile._individual_dt["@I2@"].birth = datetime.date(1985,11,12)
+  
+        result = GedcomFile.US2_birth_before_marriage(self.gedcom)
+        expect = ["ERROR: US2: FAMILY: @F_test1"]
+        self.assertEqual(expect, result)
+
+
+    def test_US5_marriage_before_death(self):
+        # Family 0: marriage occurs after death of husband by 1 day (Error Expected)
+        GedcomFile._family_dt["@F_test0"].marriage_date = datetime.date(1985,11,11)
+        id = GedcomFile._family_dt["@F_test0"].husband_id
+        GedcomFile._individual_dt[id].death_date = datetime.date(1985,11,10)
+        GedcomFile._individual_dt[id].living = False
+        id = GedcomFile._family_dt["@F_test0"].wife_id
+        GedcomFile._individual_dt[id].death_date = "NA"
+        GedcomFile._individual_dt[id].living = True
+
+        # Family 1: marriage occurs after death of wife by 1 day (Error Expected)
+        GedcomFile._family_dt["@F_test1"].marriage_date = datetime.date(1985,11,11)
+        id = GedcomFile._family_dt["@F_test1"].wife_id
+        GedcomFile._individual_dt[id].death_date = datetime.date(1985,11,10)
+        GedcomFile._individual_dt[id].living = False
+        id = GedcomFile._family_dt["@F_test1"].husband_id
+        GedcomFile._individual_dt[id].death_date = "NA"
+        GedcomFile._individual_dt[id].living = True
+
+        # Family 2: marriage occurs before death of husband by 1 day (no error expected)
+        GedcomFile._family_dt["@F_test2"].marriage_date = datetime.date(1985,11,11)
+        id = GedcomFile._family_dt["@F_test2"].husband_id
+        GedcomFile._individual_dt[id].death_date = datetime.date(1985,11,12)
+        GedcomFile._individual_dt[id].living = False
+        id = GedcomFile._family_dt["@F_test2"].wife_id
+        GedcomFile._individual_dt[id].death_date = "NA"
+        GedcomFile._individual_dt[id].living = True
+
+        # Family 3: marriage occurs before death of wife by 1 day (no error expected)
+        GedcomFile._family_dt["@F_test3"].marriage_date = datetime.date(1985,11,11)
+        id = GedcomFile._family_dt["@F_test3"].wife_id
+        GedcomFile._individual_dt[id].death_date = datetime.date(1985,11,12)
+        GedcomFile._individual_dt[id].living = False
+        id = GedcomFile._family_dt["@F_test3"].husband_id
+        GedcomFile._individual_dt[id].death_date = "NA"
+        GedcomFile._individual_dt[id].living = True
+
+        # Family 4: marriage occurs after death of husband and wife by 1 day (Error Expected twice!)
+        GedcomFile._family_dt["@F_test4"].marriage_date = datetime.date(1985,11,11)
+        id = GedcomFile._family_dt["@F_test4"].wife_id
+        GedcomFile._individual_dt[id].death_date = datetime.date(1985,11,10)
+        GedcomFile._individual_dt[id].living = False
+        id = GedcomFile._family_dt["@F_test4"].husband_id
+        GedcomFile._individual_dt[id].death_date = datetime.date(1985,11,10)
+        GedcomFile._individual_dt[id].living = False
+
+        # Family 5: marriage occurs before death of husband and wife by 1 day (No Error Expected)
+        GedcomFile._family_dt["@F_test5"].marriage_date = datetime.date(1985,11,11)
+        id = GedcomFile._family_dt["@F_test5"].wife_id
+        GedcomFile._individual_dt[id].death_date = datetime.date(1985,11,12)
+        GedcomFile._individual_dt[id].living = False
+        id = GedcomFile._family_dt["@F_test5"].husband_id
+        GedcomFile._individual_dt[id].death_date = datetime.date(1985,11,12)
+        GedcomFile._individual_dt[id].living = False
+
+        result = GedcomFile.US5_marriage_before_death(self.gedcom)
+        expect = [
+                     "ERROR: US5: FAMILY:@F_test0", 
+                     "ERROR: US5: FAMILY:@F_test1",
+                     "ERROR: US5: FAMILY:@F_test4",
+                     "ERROR: US5: FAMILY:@F_test4",
+                 ]
+        self.assertEqual(expect, result)
 
 
 
