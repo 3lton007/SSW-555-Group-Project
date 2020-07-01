@@ -345,6 +345,51 @@ class GedcomFile:
                    x.append(output)
         return x            
                
+    def US07_Death150(self):
+        ''' Death for all dead people and currently living must be less than 150'''
+        x = []
+
+        for k, v in self._individual_dt.items():
+            if v.age != 'NA' and v.age >= 150:
+                output = f"ERROR: US07: Individual ID: {k} Name: {v.name} is more more than 150 years old!"
+
+                if v.death_date != 'NA':
+                    output += f"ERROR Individual ID: {k} Name: {v.name} Death date is Not Availale {v.death_date}"
+
+                print(output)
+                x.append(output)
+        return x
+
+    def US12_Mother_Father_older(self):
+        ''' Mother's age - Sons age should be < 60, Father's age - Son's age should be < 80 '''
+        x = set()
+
+        for k in self._family_dt.values():
+            if k.wife_id != 'NA':
+                w = self._individual_dt[k.wife_id]
+                if w.age == 'NA':
+                    print(f"US12: Individual ID: Mother's Name:{w.name} Age is NA")
+                    continue
+            if k.husband_id != 'NA':
+                h = self._individual_dt[k.husband_id]
+                if h.age == 'NA':
+                    print(f"US12: Individual ID:{k.id} Father's Name:{h.name} Age is NA")
+                    continue
+            if k.children:
+                for c in [self._individual_dt[ch] for ch in k.children]:
+                    if c.age == 'NA':
+                        print(f"US12: The child name:{c.name} with ID {c.id} has Age NA")
+                    if w.age - c.age >= 60:
+                        output = f"ERROR: US12: Family ID:{k.id} Mother's ID and Name:{w.name} and Age:{w.age} is 60 years or older than Child's Name: {c.name} Age: {c.age}"
+                        print(output)
+                        x.add(k.id)
+                    if h.age - c.age >= 80:
+                        output = f"ERROR: US12: Family ID:{k.id} Father's ID and Name:{h.name} and Age:{h.age} is 80 years or older than Child's Name: {c.name} Age: {c.age}"
+                        print(output)
+                        x.add(k.id)
+
+        return x
+                        
     def US2_birth_before_marriage(self):
         ''''Birth should occur before marriage of an individual'''
         r = list()
@@ -528,6 +573,8 @@ class GedcomFile:
                 pretty_table_for_living_over_thirty_never_married.add_row([individual_id, name])
         
         print(f'US31: All Individuals Living, Over 30, and Never Married:\n{pretty_table_for_living_over_thirty_never_married}\n')
+    
+    
 
 
     def US28_list_all_siblings_from_oldest_to_youngest(self) -> List[List[str]]:
@@ -671,6 +718,8 @@ def main() -> None:
     
     gedcom.US03_birth_death()
     gedcom.US06_divorce_before_death()
+    gedcom.US07_Death150()
+    gedcom.US12_Mother_Father_older()
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
     gedcom.US36_list_recent_deaths()
     gedcom.US37_list_recent_survivors()
