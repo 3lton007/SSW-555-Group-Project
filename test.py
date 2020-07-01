@@ -233,7 +233,6 @@ class main_testing(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
-
     def test_US04_Marriage_before_divorce(self):
         # Family 0: Divorce before marriage by 1 day
         GedcomFile._family_dt["@F_test0"].marriage_date = datetime.date(1985,11,11)
@@ -666,6 +665,59 @@ class main_testing(unittest.TestCase):
                  ]
         self.assertEqual(expect, result)
 
+        
+    def test_US28_order_siblings_by_age(self) -> None:
+        '''tests that the method implemented for US28 correctly orders sibling for every family: from Oldest to Youngest'''
+
+        gedcom: GedcomFile = GedcomFile()
+        gedcom.read_file(GedcomFileTest.test_file_name)
+        gedcom.validate_tags_for_output()
+        
+        gedcom.update_validated_list()
+        gedcom.parse_validated_gedcom()
+        gedcom.family_set_spouse_names()
+        
+        result: List[List[str]] = gedcom.US28_list_all_siblings_from_oldest_to_youngest()
+        
+        expected: List[List[str]] = [
+
+                                    ['@F1@', '@K1@', 'Sally /Sam/', 30],
+                                    ['@F1@', '@I1@', 'Siva /Sam/', 26],
+                                    ['@F1@', '@K2@', 'Amanda /Sam/', 18],
+                                    ['@F2@', '@K4@', 'Mike /Sam/', 35],
+                                    ['@F2@', '@K3@', 'Joe /Sam/', 24],
+                                    ['@F2@', '@I7@', 'Ram /Sam/', 22],
+                                
+                                    ]
+                                   
+
+        self.assertEqual(result, expected)
+
+    def test_US27_setAge(self) -> None:
+        '''tests that the method implemented to set an individual's age correctly calculates age'''
+
+        person1: Individual = Individual()
+        person1.preceding_tag_related_to_date: str = 'BIRT'
+        person1.process_individual_record_date_tag('20 MAR 1991')
+
+        person2: Individual = Individual()
+        person2.preceding_tag_related_to_date: str = 'BIRT'
+        person2.process_individual_record_date_tag('6 JUN 1925')  
+        person2.preceding_tag_related_to_date: str = 'DEAT'
+        person2.process_individual_record_date_tag('28 JUN 2020')
+
+        person3: Individual = Individual()
+        person3.preceding_tag_related_to_date: str = 'BIRT'
+        person3.process_individual_record_date_tag('28 JUN 2020')
+
+        person4: Individual = Individual()
+        person4.preceding_tag_related_to_date: str = 'BIRT'
+        person4.process_individual_record_date_tag('29 FEB 2000')
+
+        result: List[str] = [person1.age, person2.age, person3.age, person4.age]
+        expected: List[str] = [29, 95, 0, 20]
+
+        self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':
