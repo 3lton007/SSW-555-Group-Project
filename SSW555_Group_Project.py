@@ -682,7 +682,7 @@ class GedcomFile:
         pt_survivors.sortby = "Recently Deceased ID"
 
         if len(recently_deceased_lst) > 0:
-            print(f"US37: Survivors of recently deceased:\n {pt_survivors}")
+            print(f"US37: Survivors of recently deceased:\n{pt_survivors}")
         return pt_survivors
 
 
