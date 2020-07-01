@@ -669,25 +669,33 @@ class main_testing(unittest.TestCase):
     def test_US28_order_siblings_by_age(self) -> None:
         '''tests that the method implemented for US28 correctly orders sibling for every family: from Oldest to Youngest'''
 
-        gedcom: GedcomFile = GedcomFile()
-        gedcom.read_file(GedcomFileTest.test_file_name)
-        gedcom.validate_tags_for_output()
-        
-        gedcom.update_validated_list()
-        gedcom.parse_validated_gedcom()
-        gedcom.family_set_spouse_names()
-        
-        result: List[List[str]] = gedcom.US28_list_all_siblings_from_oldest_to_youngest()
-        
-        expected: List[List[str]] = [
+        # Define 1st family with 3 children of different ages.
+        GedcomFile._family_dt["@F_test0"].children = set(["@I3@", "@I4@", "@I6@"])
+        GedcomFile._individual_dt["@I3@"].age = 30
+        GedcomFile._individual_dt["@I3@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I4@"].age = 18
+        GedcomFile._individual_dt["@I4@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I6@"].age = 26
+        GedcomFile._individual_dt["@I6@"].famc = set(["@F_test0"])
 
-                                    ['@F1@', '@K1@', 'Sally /Sam/', 30],
-                                    ['@F1@', '@I1@', 'Siva /Sam/', 26],
-                                    ['@F1@', '@K2@', 'Amanda /Sam/', 18],
-                                    ['@F2@', '@K4@', 'Mike /Sam/', 35],
-                                    ['@F2@', '@K3@', 'Joe /Sam/', 24],
-                                    ['@F2@', '@I7@', 'Ram /Sam/', 22],
-                                
+        # Define a second fammily with 3 children of different ages.
+        GedcomFile._family_dt["@F_test1"].children = set(["@I2@", "@I5@", "@I7@"])
+        GedcomFile._individual_dt["@I2@"].age = 35
+        GedcomFile._individual_dt["@I2@"].famc = set(["@F_test1"])
+        GedcomFile._individual_dt["@I5@"].age = 24
+        GedcomFile._individual_dt["@I5@"].famc = set(["@F_test1"])
+        GedcomFile._individual_dt["@I7@"].age = 22
+        GedcomFile._individual_dt["@I7@"].famc = set(["@F_test1"])        
+        
+        result: List[List[str]] = GedcomFile.US28_list_all_siblings_from_oldest_to_youngest(self.gedcom)
+
+        expected: List[List[str]] = [
+                                    ['@F_test0', '@I3@', GedcomFile._individual_dt["@I3@"].name, 30],
+                                    ['@F_test0', '@I6@', GedcomFile._individual_dt["@I6@"].name, 26],
+                                    ['@F_test0', '@I4@', GedcomFile._individual_dt["@I4@"].name, 18],
+                                    ['@F_test1', '@I2@', GedcomFile._individual_dt["@I2@"].name, 35],
+                                    ['@F_test1', '@I5@', GedcomFile._individual_dt["@I5@"].name, 24],
+                                    ['@F_test1', '@I7@', GedcomFile._individual_dt["@I7@"].name, 22],
                                     ]
                                    
 
