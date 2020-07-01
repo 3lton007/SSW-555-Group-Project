@@ -1,5 +1,3 @@
-'''The purpose of this program is to identify errors and anomalies in GEDCOM geneology files'''
-
 from typing import Iterator, Tuple, IO, List, Dict, Set
 from collections import defaultdict
 import datetime
@@ -246,7 +244,7 @@ class GedcomFile:
         individual_record = False
         family_record = False
         
-        for level, tag, argument in self.parse_valid_entry():
+        for _, tag, argument in self.parse_valid_entry():
             if tag == "INDI":
                 # Subsequent records will define an individual
                 individual_record = True
@@ -347,7 +345,46 @@ class GedcomFile:
                    x.append(output)
         return x            
                
-            
+    def US2_birth_before_marriage(self):
+        ''''Birth should occur before marriage of an individual'''
+        r = list()
+        for id in self._family_dt.keys():
+            if self._family_dt[id].marriage_date != 'NA' and self._family_dt[id].children !='NA':
+                marDate = self._family_dt[id].marriage_date
+                for cid in self._family_dt[id].children:
+                    if self._individual_dt[cid].birth == 'NA':
+                        continue
+                    else:
+                        brthDate = self._individual_dt[cid].birth
+                        if brthDate < marDate:
+                            output =f"ERROR: US2: FAMILY: {id}  childID: {cid} birth {brthDate} before marriage date {marDate}"
+                            output2 =f"ERROR: US2: FAMILY: {id}"
+                            print(output)
+                            r.append(output2)
+        return r
+
+    def US5_marriage_before_death(self):
+        '''Marriage should occur before death of either spouse'''
+        r = list()
+        for id in self._family_dt.keys():
+            if self._family_dt[id].marriage_date != 'NA':
+                marDate = self._family_dt[id].marriage_date
+                indi_ddates = {} #inidvidual death dates dic 
+                husID = self._family_dt[id].husband_id
+                wifeID = self._family_dt[id].wife_id
+                indi_ddates[husID] = self._individual_dt[husID].death_date
+                indi_ddates[wifeID] = self._individual_dt[wifeID].death_date
+                for ids, vals in indi_ddates.items():
+                     if vals !='NA': # to find death date for each indivdual 
+                         deathDate = vals
+                         if deathDate < marDate: #Compare if  death date for inidvidual happens before marriage date 
+                             output = f"ERROR:US5, Family {id} Individual  {ids} dies  on {deathDate} before marriage date on {marDate}"
+                             output2 = f"ERROR: US5: FAMILY:{id}"              
+                             print(output)
+                             r.append(output2)
+        return r
+
+
     def US4_Marriage_before_divorce(self): 
         '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
         r = list()
@@ -392,9 +429,9 @@ class GedcomFile:
                     r.append(output) 
         return r
 
-    def US34_list_large_age_differences(self) -> None:
+    def US34_list_large_age_differences(self):
         '''US 34: List all couples who were married when the older spouse was more than twice as old as the younger spouse '''
-        
+        output = ""
         for family in self._family_dt.values():
             
             try:
@@ -420,17 +457,20 @@ class GedcomFile:
                 continue
 
             # OK, if we're still here, then we have an Anomaly to report. 
-            print("ANOMALY: US34: FAMILY: %s " %family.id, end='')
+            output += f"ANOMALY: US34: FAMILY: {family.id} "
 
             if husband_is_older:
-                print("Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d" \
-                %(family.husband_name, family.husband_id, husband.age, family.wife_name,  family.wife_id, wife.age ))            
+                output += f"Name: {family.husband_name}, id: {family.husband_id}, age: {husband.age} is more than 2x in age as spouse: {family.wife_name}, id: {family.wife_id}, age: {wife.age}\n"        
             else:
-                print("Name: %s, id: %s, age: %d is more than 2x in age as spouse: %s, id: %s, age: %d" \
-                %(family.wife_name, family.wife_id, wife.age, family.husband_name,  family.husband_id, husband.age ))
+                output += f"Name: {family.wife_name}, id: {family.wife_id}, age: {wife.age} is more than 2x in age as spouse: {family.husband_name}, id: {family.husband_id}, age: {husband.age}\n"
+        
+        print(output, end="")
+        return output
+            
 
-    def US35_list_recent_births(self)->None:
+    def US35_list_recent_births(self):
         '''US35: List all people in a GEDCOM file who were born in the last 30 days'''
+        output = ""
         for person in self._individual_dt.values():
             birth_date = person.birth
             if type(birth_date) != datetime.date:
@@ -444,8 +484,9 @@ class GedcomFile:
                 continue
             
             if age_days <= 30:
-                print("ANOMALY: US35: Name: %s, Individual: ID %s, born %d days ago! Birthday: %s" \
-                %(person.name, person.id, age_days, birth_date))
+                output += f"ANOMALY: US35: Name: {person.name}, Individual: ID {person.id}, born {age_days} days ago! Birthday: {birth_date}\n"
+        print(output, end="")
+        return output
 
     def parse_individuals_based_on_living_and_marital_details(self) -> None:
         '''US30 & US31: Identifies whether an individual is: Living and married, or Living, over 30 years old and has never been married. After identifying, stores the 
@@ -522,6 +563,81 @@ class GedcomFile:
 
                 family_siblings = list()
 
+    def find_deceased_within30days(self):
+        result = list()
+        for person in self._individual_dt.values():
+            death_date = person.death_date
+            if type(death_date) != datetime.date:
+                # Invalid entry. Death date never logged, so skip this individual.
+                continue
+            today = datetime.date.today()
+            days_since_death = (today - death_date).days  # difference results in datetime.timedelta
+
+            if days_since_death < 0:
+                # Invalid death date (set in the future!). Skip this individual.
+                continue
+            elif days_since_death <= 30:
+                result.append([person.id, person.name, person.death_date])
+        return result
+
+    def US36_list_recent_deaths(self) -> None:
+        '''List all people who died in the last 30 days'''
+        recently_deceased_lst = self.find_deceased_within30days()
+
+        pt_recently_deceased: PrettyTable = PrettyTable(field_names=['ID', 'Name', "Death Date"])
+
+        for id, name, deathdate in recently_deceased_lst:
+            pt_recently_deceased.add_row([id, name, deathdate])
+
+        pt_recently_deceased.sortby = "Death Date"
+        pt_recently_deceased.reversesort = False
+
+        if len(recently_deceased_lst) > 0:
+            print(f'\nUS36: Recently deceased:\n{pt_recently_deceased}\n')
+        return pt_recently_deceased
+
+
+
+    def walk_down_family_tree(self, family, descendant_lst) -> None:
+        '''Recursive method for finding all descendants'''
+        for child_id in self._family_dt[family].children:
+            descendant_lst.append(child_id)
+            for fam in self._individual_dt[child_id].fams:
+                self.walk_down_family_tree(fam, descendant_lst)
+
+
+    def US37_list_recent_survivors(self) -> None:
+        '''List all living spouses/descendants of people who died in last 30 days'''
+        recently_deceased_lst = self.find_deceased_within30days()
+
+        pt_survivors: PrettyTable = PrettyTable(field_names=['Recently Deceased ID', 'Recently Deceased Name', 'Surviver ID', 'Surviver Name', "Relationship to Deceased"])
+
+        for d_id, name, _ in recently_deceased_lst:
+            for spousefamid in self._individual_dt[d_id].fams:
+                if d_id == self._family_dt[spousefamid].wife_id:
+                    spouseid = self._family_dt[spousefamid].husband_id
+                else:
+                    spouseid = self._family_dt[spousefamid].wife_id
+                
+                if self._individual_dt[spouseid].living:
+                    if self._family_dt[spousefamid].divorce_date != 'NA':
+                        Prefix = "Ex-"
+                    else:
+                        Prefix = ""
+                    pt_survivors.add_row([d_id, name, spouseid, self._individual_dt[spouseid].name, Prefix+"Spouse"])
+                
+                d_lst = list()
+                self.walk_down_family_tree(spousefamid, d_lst)
+                for descendant in d_lst:
+                    if self._individual_dt[descendant].living:
+                        pt_survivors.add_row([d_id, name, descendant, self._individual_dt[descendant].name, "Descendant"])
+
+        pt_survivors.sortby = "Recently Deceased ID"
+
+        if len(recently_deceased_lst) > 0:
+            print(f"US37: Survivors of recently deceased:\n {pt_survivors}")
+        return pt_survivors
+
 
 def main() -> None:
     '''Runs main program'''
@@ -545,6 +661,8 @@ def main() -> None:
     gedcom.US35_list_recent_births()
     gedcom.US4_Marriage_before_divorce()
     gedcom.US21_correct_gender_for_role()
+    gedcom.US2_birth_before_marriage()
+    gedcom.US5_marriage_before_death()
 
     #US30 & #US31
     gedcom.parse_individuals_based_on_living_and_marital_details()
@@ -553,8 +671,9 @@ def main() -> None:
     
     gedcom.US03_birth_death()
     gedcom.US06_divorce_before_death()
-
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
+    gedcom.US36_list_recent_deaths()
+    gedcom.US37_list_recent_survivors()
 
 if __name__ == '__main__':
     main()
