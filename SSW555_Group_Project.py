@@ -406,7 +406,7 @@ class GedcomFile:
                         birthDate = vals
                         if marDate < birthDate:
                             output = f"ERROR: US2: FAMILY: {id} Individuals {ids} birth {birthDate} should be before marriage date {marDate}"
-                            output2 = f"ERROR: US2:FAMILY:{id}"
+                            output2 = f"ERROR: US2: FAMILY: {id}"
                             print(output)
                             r.append(output2)
         return r
