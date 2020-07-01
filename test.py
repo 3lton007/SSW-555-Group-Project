@@ -540,6 +540,28 @@ class main_testing(unittest.TestCase):
 
 
 
+    def test_US02_birth_before_marraige(self):
+        gedcom: GedcomFile = GedcomFile()
+        gedcom.read_file(GedcomFileTest.test_file_name)
+        gedcom.validate_tags_for_output()
+        gedcom.update_validated_list()
+        gedcom.parse_validated_gedcom()
+        gedcom.family_set_spouse_names()
+        result = gedcom.US2_birth_before_marriage()
+        expect = ["ERROR: US2: FAMILY: @F8@"]
+        self.assertEqual(expect, result)
+
+
+    def test_US5_marriage_before_death(self):
+        gedcom: GedcomFile = GedcomFile()
+        gedcom.read_file(GedcomFileTest.test_file_name)
+        gedcom.validate_tags_for_output()
+        gedcom.update_validated_list()
+        gedcom.parse_validated_gedcom()
+        gedcom.family_set_spouse_names()
+        result = gedcom.US5_marriage_before_death()
+        expect = ["ERROR: US5: FAMILY:@F10@", "ERROR: US5: FAMILY:@F10@"]
+        self.assertEqual(expect, result)
 
         # OK, now let's test the pretty table of recent survivors. We expect the same individuals, except for @I10@ which is deceased.
         expected_pt = PrettyTable(field_names=['Recently Deceased ID', 'Recently Deceased Name', 'Surviver ID', 'Surviver Name', "Relationship to Deceased"])
@@ -588,6 +610,7 @@ class main_testing(unittest.TestCase):
         actual_pt = self.gedcom.US37_list_recent_survivors()
 
         self.assertEqual(expected_pt.get_string(), actual_pt.get_string())
+
 
 
 
