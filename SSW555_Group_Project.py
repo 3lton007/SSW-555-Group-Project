@@ -349,16 +349,19 @@ class GedcomFile:
         ''''Birth should occur before marriage of an individual'''
         r = list()
         for id in self._family_dt.keys():
-            if self._family_dt[id].marriage_date != 'NA' and self._family_dt[id].children !='NA':
+            if self._family_dt[id].marriage_date != 'NA':
                 marDate = self._family_dt[id].marriage_date
-                for cid in self._family_dt[id].children:
-                    if self._individual_dt[cid].birth == 'NA':
-                        continue
-                    else:
-                        brthDate = self._individual_dt[cid].birth
-                        if brthDate < marDate:
-                            output =f"ERROR: US2: FAMILY: {id}  childID: {cid} birth {brthDate} before marriage date {marDate}"
-                            output2 =f"ERROR: US2: FAMILY: {id}"
+                indi_bdates = {}
+                husID = self._family_dt[id].husband_id
+                wifeID = self._family_dt[id].wife_id
+                indi_bdates[husID] = self._individual_dt[husID].birth
+                indi_bdates[wifeID] = self._individual_dt[wifeID].birth
+                for ids, vals in indi_bdates.items():
+                    if vals !='NA':
+                        birthDate = vals
+                        if marDate < birthDate:
+                            output = f"ERROR: US2: FAMILY: {id} Individuals {ids} birth {birthDate} should be before marriage date {marDate}"
+                            output2 = f"ERROR: US2:FAMILY:{id}"
                             print(output)
                             r.append(output2)
         return r
