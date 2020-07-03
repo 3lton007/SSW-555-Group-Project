@@ -354,7 +354,7 @@ class GedcomFile:
                 output = f"ERROR: US07: Individual ID: {k} Name: {v.name} is more more than 150 years old!"
 
                 if v.death_date != 'NA':
-                    output += f"ERROR Individual ID: {k} Name: {v.name} Death date is Not Availale {v.death_date}"
+                    output += f"Death date is {v.death_date}"
 
                 print(output)
                 x.append(output)
