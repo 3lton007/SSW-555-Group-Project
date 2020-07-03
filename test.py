@@ -358,6 +358,40 @@ class main_testing(unittest.TestCase):
 
         self.assertEqual(expect, result)
 
+    def test_US07(self):
+        GedcomFile._individual_dt["@I11@"].death_date = datetime.date(1980,11,13)
+        GedcomFile._individual_dt["@I11@"].birth = datetime.date(1885,4,14)
+        name = GedcomFile._individual_dt["@I11@"].name
+        result = GedcomFile.US07_Death150(self.gedcom)
+    
+
+        expect = [
+                  f"ERROR: US07: Individual ID: @I11@ Name: {name} is more more than 150 years old!Death date is 1980-11-13"
+            ]
+        self.assertEqual(expect, result)
+
+    def test_US12(self):
+
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set({"@I2@"})
+        name = GedcomFile._individual_dt["@I0@"].name
+        name1 = GedcomFile._individual_dt["@I1@"].name
+        name2 = GedcomFile._individual_dt["@I2@"].name
+
+        GedcomFile._individual_dt["@I0@"].birth = datetime.date(1945,4,14)
+        GedcomFile._individual_dt["@I1@"].birth = datetime.date(1945,5,19)
+        GedcomFile._individual_dt["@I2@"].birth = datetime.date(2010,6,18)
+
+        today = datetime.date.today()
+
+        age1 = today - GedcomFile._individual_dt["@I1@"].birth
+        age2 = today - GedcomFile._individual_dt["@I2@"].birth
+        result = GedcomFile.US12_Mother_Father_older(self.gedcom)
+
+
+        self.assertEqual({'@F_test0'}, result)
+
 
 
 
