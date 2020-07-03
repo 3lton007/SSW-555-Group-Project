@@ -354,7 +354,7 @@ class GedcomFile:
                 output = f"ERROR: US07: Individual ID: {k} Name: {v.name} is more more than 150 years old!"
 
                 if v.death_date != 'NA':
-                    output += f"ERROR Individual ID: {k} Name: {v.name} Death date is Not Availale {v.death_date}"
+                    output += f"Death date is {v.death_date}"
 
                 print(output)
                 x.append(output)
@@ -368,23 +368,23 @@ class GedcomFile:
             if k.wife_id != 'NA':
                 w = self._individual_dt[k.wife_id]
                 if w.age == 'NA':
-                    print(f"US12: Individual ID: Mother's Name:{w.name} Age is NA")
+                    print(f"US12: Individual ID:{w.id} Mother's Name:{w.name} Age is NA")
                     continue
             if k.husband_id != 'NA':
                 h = self._individual_dt[k.husband_id]
                 if h.age == 'NA':
-                    print(f"US12: Individual ID:{k.id} Father's Name:{h.name} Age is NA")
+                    print(f"US12: Individual ID:{h.id} Father's Name:{h.name} Age is NA")
                     continue
             if k.children:
                 for c in [self._individual_dt[ch] for ch in k.children]:
                     if c.age == 'NA':
                         print(f"US12: The child name:{c.name} with ID {c.id} has Age NA")
                     if w.age - c.age >= 60:
-                        output = f"ERROR: US12: Family ID:{k.id} Mother's ID and Name:{w.name} and Age:{w.age} is 60 years or older than Child's Name: {c.name} Age: {c.age}"
+                        output = f"ERROR: US12: Family ID:{k.id} Mother's ID:{w.id} and Name:{w.name} and Age:{w.age} is 60 years or older than Child's ID: {c.id} Name: {c.name} Age: {c.age}"
                         print(output)
                         x.add(k.id)
                     if h.age - c.age >= 80:
-                        output = f"ERROR: US12: Family ID:{k.id} Father's ID and Name:{h.name} and Age:{h.age} is 80 years or older than Child's Name: {c.name} Age: {c.age}"
+                        output = f"ERROR: US12: Family ID:{k.id} Father's ID:{h.id} and Name:{h.name} and Age:{h.age} is 80 years or older than Child's ID: {c.id} Name: {c.name} Age: {c.age}"
                         print(output)
                         x.add(k.id)
 
