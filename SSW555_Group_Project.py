@@ -380,11 +380,11 @@ class GedcomFile:
                     if c.age == 'NA':
                         print(f"US12: The child name:{c.name} with ID {c.id} has Age NA")
                     if w.age - c.age >= 60:
-                        output = f"ERROR: US12: Family ID:{k.id} Mother's ID:{w.id} and Name:{w.name} and Age:{w.age} is 60 years or older than Child's ID: {c.id} Name: {c.name} Age: {c.age}"
+                        output = f"ANOMALY: US12: Family ID:{k.id} Mother's ID:{w.id} and Name:{w.name} and Age:{w.age} is 60 years or older than Child's ID: {c.id} Name: {c.name} Age: {c.age}"
                         print(output)
                         x.add(k.id)
                     if h.age - c.age >= 80:
-                        output = f"ERROR: US12: Family ID:{k.id} Father's ID:{h.id} and Name:{h.name} and Age:{h.age} is 80 years or older than Child's ID: {c.id} Name: {c.name} Age: {c.age}"
+                        output = f"ANOMALY: US12: Family ID:{k.id} Father's ID:{h.id} and Name:{h.name} and Age:{h.age} is 80 years or older than Child's ID: {c.id} Name: {c.name} Age: {c.age}"
                         print(output)
                         x.add(k.id)
 
