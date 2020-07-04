@@ -405,7 +405,7 @@ class GedcomFile:
                     if vals !='NA':
                         birthDate = vals
                         if marDate < birthDate:
-                            output = f"ERROR: US2: FAMILY: {id} Individuals {ids} birth {birthDate} should be before marriage date {marDate}"
+                            output = f"ERROR: US2: FAMILY: {id} Individual: {ids} Name: {self._individual_dt[ids].name} birth: {birthDate} should be before marriage date {marDate}"
                             output2 = f"ERROR: US2: FAMILY: {id}"
                             print(output)
                             r.append(output2)
@@ -426,7 +426,7 @@ class GedcomFile:
                      if vals !='NA': # to find death date for each indivdual 
                          deathDate = vals
                          if deathDate < marDate: #Compare if  death date for inidvidual happens before marriage date 
-                             output = f"ERROR:US5, Family {id} Individual  {ids} dies  on {deathDate} before marriage date on {marDate}"
+                             output = f"ERROR: US5: Family: {id} Individual: {ids} Name: {self._individual_dt[ids].name} dies on {deathDate} before marriage date on {marDate}"
                              output2 = f"ERROR: US5: FAMILY:{id}"              
                              print(output)
                              r.append(output2)
