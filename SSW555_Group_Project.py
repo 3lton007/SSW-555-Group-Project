@@ -734,9 +734,42 @@ class GedcomFile:
 
 
     def US33_list_orphans(self)->None:
-        '''List all orphaned children (both parents dead and child < 18 years old)'''
-        pass
+        '''
+        List all orphaned children (both parents dead and child < 18 years old).
+        If an individual has no parents listed, they won't be listed as an orphan. 
+        Individuals will be listed regardless of whether they are living or dead.
+        '''
 
+        orphan_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        num_pt_entries = 0
+        for person in self._individual_dt.values():
+
+            # Only orphan if parents are dead. If no parents are listed, skip this individual.
+            if len(person.famc) == 0:
+                continue
+
+            # If we can't determine an age, skip that person. Otherwise, check for age requirement
+            if type(person.age) != str and person.age < 18:
+
+                # Loop through all famc families. We only expect one, but it may be possible for a child
+                # to be present in multiple families if they are adopted. Here we are defining an orphan
+                # as a child < 18 years old who has no living parents, biological or not.
+                orphan = True
+
+                for family in person.famc:
+                    mother_id = self._family_dt[family].wife_id
+                    father_id = self._family_dt[family].husband_id
+                    if self._individual_dt[mother_id].living or self._individual_dt[father_id].living:
+                        orphan = False
+                
+                if orphan:
+                    orphan_pt.add_row([person.famc or "None", person.id, person.name])
+                    num_pt_entries += 1
+
+        if num_pt_entries > 0:
+            orphan_pt.sortby = 'Individual ID'
+            print(f"\nUS33: List Orphans:\n{orphan_pt}")
+        return orphan_pt
 
 
 def main() -> None:
@@ -779,7 +812,7 @@ def main() -> None:
     
     # Sprint 03
     gedcom.US32_list_multiple_births()
-
+    gedcom.US33_list_orphans()
 
 
 if __name__ == '__main__':

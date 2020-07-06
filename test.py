@@ -862,5 +862,80 @@ class main_testing(unittest.TestCase):
         actual = self.gedcom.US32_list_multiple_births()
         self.assertEqual(expected_pt.get_string(), actual.get_string())
 
+
+
+
+    def test_US33_Orphans(self) -> None:
+        # Define family with 3 children. Both parents are deceased
+        GedcomFile._family_dt["@F_test0"].children = set(["@I2@", "@I5@", "@I7@"])
+        GedcomFile._individual_dt["@I2@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*18))
+        GedcomFile._individual_dt["@I5@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*17))
+        GedcomFile._individual_dt["@I7@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*19))
+
+        # Make sure each child is actually part of the test family.
+        for child in GedcomFile._family_dt["@F_test0"].children:
+            GedcomFile._individual_dt[child].setAge()
+            GedcomFile._individual_dt[child].famc = set(["@F_test0"]) 
+
+        father = GedcomFile._family_dt["@F_test0"].husband_id
+        mother = GedcomFile._family_dt["@F_test0"].wife_id
+
+
+
+        #####Test 1: Both parents deceased
+        GedcomFile._individual_dt[father].living = False
+        GedcomFile._individual_dt[mother].living = False
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        expected_pt.add_row([set(["@F_test0"]), "@I5@", GedcomFile._individual_dt["@I5@"].name])
+
+        actual = self.gedcom.US33_list_orphans()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+
+
+         #####Test 2: Father is alive, mother is deceased
+        GedcomFile._individual_dt[father].living = True
+        GedcomFile._individual_dt[mother].living = False
+
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        # We don't expect any entries in the table
+
+        actual = self.gedcom.US33_list_orphans()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+
+
+         #####Test 3: Father is deceased, mother is alive
+        GedcomFile._individual_dt[father].living = False
+        GedcomFile._individual_dt[mother].living = True
+
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        # We don't expect any entries in the table
+        
+        actual = self.gedcom.US33_list_orphans()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+
+
+         #####Test 4: both parents deceased, more than one sibling is younger than 18
+        GedcomFile._individual_dt[father].living = False
+        GedcomFile._individual_dt[mother].living = False
+        GedcomFile._individual_dt["@I2@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*17))
+        GedcomFile._individual_dt["@I5@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*16))
+        GedcomFile._individual_dt["@I7@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*18))
+
+        # Make sure each child is actually part of the test family.
+        for child in GedcomFile._family_dt["@F_test0"].children:
+            GedcomFile._individual_dt[child].setAge()
+            GedcomFile._individual_dt[child].famc = set(["@F_test0"]) 
+
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        expected_pt.add_row([set(["@F_test0"]), "@I5@", GedcomFile._individual_dt["@I5@"].name])
+        expected_pt.add_row([set(["@F_test0"]), "@I2@", GedcomFile._individual_dt["@I2@"].name])
+        expected_pt.sortby = 'Individual ID'
+        actual = self.gedcom.US33_list_orphans()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+
 if __name__ == '__main__':
     unittest.main()
