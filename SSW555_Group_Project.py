@@ -727,7 +727,7 @@ class GedcomFile:
 
         if len(multiple_birth_set) > 0:
             multiple_births_pt.sortby = 'Family ID'
-            print(f"US32: Multiple Births:\n{multiple_births_pt}")
+            print(f"\nUS32: Multiple Births:\n{multiple_births_pt}")
         return multiple_births_pt
 
 
