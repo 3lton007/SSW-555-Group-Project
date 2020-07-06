@@ -689,11 +689,60 @@ class GedcomFile:
         return pt_survivors
 
 
+    def US32_list_multiple_births(self)->None:
+        ''' 
+        List all multiple births
+        A multiple birth is 2 or more offspring born in the same birth event. Normally they are born within seconds 
+        of eachother. In case of complications it could be hours. Because they are not born precisely at the same time,
+        it is possible for twins to be born on different days, years, centuries, etc.
+        e.g. twin 1 born at 11:59:30 on DEC 31st 1999 and twin 2 born 30 seconds later on JAN 1st 2000.
+
+        We will make an assumption that a multiple birth occurred if sibblings are born within 1 day of eachother.
+        '''
+        multiple_births_pt: PrettyTable = PrettyTable(field_names = ['Family ID', 'Child ID', 'Child Name', 'Child Birth Date'])
+        multiple_birth_set = set()
+
+        # Go through each and every family
+        for fam in self._family_dt.values():
+
+            child_lst = list()
+            for child in list(fam.children):
+                child_lst.append(self._individual_dt[child])
+
+            # Compare each sibling against eachother, ensuring that siblings aren't compared with themselves.
+            for i in range (len(child_lst)):
+                for j in range (i+1, len(child_lst)):
+                    # if birthdate not provided, then skip
+                    if type(child_lst[i].birth) == str or type(child_lst[j].birth) == str:
+                        continue
+
+                    # Subtract birthdates. If the difference is one day or less, then both are part of same multiple birth
+                    diff_days = abs((child_lst[i].birth - child_lst[j].birth).days)
+                    if diff_days <= 1:
+                        multiple_birth_set.add(child_lst[i])
+                        multiple_birth_set.add(child_lst[j])
+
+        for child in multiple_birth_set:
+            multiple_births_pt.add_row([str(child.famc), child.id, child.name, child.birth])
+
+        if len(multiple_birth_set) > 0:
+            multiple_births_pt.sortby = 'Family ID'
+            print(f"US32: Multiple Births:\n{multiple_births_pt}")
+        return multiple_births_pt
+
+
+
+
+    def US33_list_orphans(self)->None:
+        '''List all orphaned children (both parents dead and child < 18 years old)'''
+        pass
+
+
+
 def main() -> None:
     '''Runs main program'''
 
     file_name: str = input('Enter GEDCOM file name: ')
-    #file_name: str = "p1.ged"
     
     gedcom: GedcomFile = GedcomFile()
     gedcom.read_file(file_name)
@@ -726,6 +775,12 @@ def main() -> None:
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
     gedcom.US36_list_recent_deaths()
     gedcom.US37_list_recent_survivors()
+
+    
+    # Sprint 03
+    gedcom.US32_list_multiple_births()
+
+
 
 if __name__ == '__main__':
     main()

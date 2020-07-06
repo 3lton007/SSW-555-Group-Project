@@ -812,5 +812,55 @@ class main_testing(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
+
+
+    def test_US32_Multiple_Births(self) -> None:
+        # Define 1st family with 5 children. 3 are multiple birth, 2 are not.
+        GedcomFile._family_dt["@F_test0"].children = set(["@I3@", "@I4@", "@I6@", "@I8@", "@I10@"])
+
+        # These 3 are born one day apart (part of same multiple birth)
+        GedcomFile._individual_dt["@I3@"].birth = datetime.date(1980, 1, 1)
+        GedcomFile._individual_dt["@I4@"].birth = datetime.date(1979, 12, 31)
+        GedcomFile._individual_dt["@I6@"].birth = datetime.date(1980, 1, 1)
+
+        # These 2 are not part of multiple birth
+        GedcomFile._individual_dt["@I8@"].birth = datetime.date(1985, 1, 1)
+        GedcomFile._individual_dt["@I10@"].birth = datetime.date(1986, 1, 1)
+
+        # Make sure each child is actually part of the test family.
+        for child in GedcomFile._family_dt["@F_test0"].children:
+            GedcomFile._individual_dt[child].living = True
+            GedcomFile._individual_dt[child].setAge()
+            GedcomFile._individual_dt[child].famc = set(["@F_test0"])    
+
+
+        # Define 2nd family with 3 children. 2 are multiple birth, 1 is not.
+        GedcomFile._family_dt["@F_test1"].children = set(["@I2@", "@I5@", "@I7@"])
+
+        # These 2 are born one day apart (part of same multiple birth)
+        GedcomFile._individual_dt["@I2@"].birth = datetime.date(1980, 1, 1)
+        GedcomFile._individual_dt["@I5@"].birth = datetime.date(1980, 1, 2)
+
+        # This one is not
+        GedcomFile._individual_dt["@I7@"].birth = datetime.date(1985, 1, 1)
+
+        # Make sure each child is actually part of the test family.
+        for child in GedcomFile._family_dt["@F_test1"].children:
+            GedcomFile._individual_dt[child].living = True
+            GedcomFile._individual_dt[child].setAge()
+            GedcomFile._individual_dt[child].famc = set(["@F_test1"]) 
+
+
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID', 'Child ID', 'Child Name', 'Child Birth Date'])
+        expected_pt.add_row([set(["@F_test0"]), "@I3@", GedcomFile._individual_dt["@I3@"].name, GedcomFile._individual_dt["@I3@"].birth])
+        expected_pt.add_row([set(["@F_test0"]), "@I4@", GedcomFile._individual_dt["@I4@"].name, GedcomFile._individual_dt["@I4@"].birth])
+        expected_pt.add_row([set(["@F_test0"]), "@I6@", GedcomFile._individual_dt["@I6@"].name, GedcomFile._individual_dt["@I6@"].birth])
+        expected_pt.add_row([set(["@F_test1"]), "@I2@", GedcomFile._individual_dt["@I2@"].name, GedcomFile._individual_dt["@I2@"].birth])
+        expected_pt.add_row([set(["@F_test1"]), "@I5@", GedcomFile._individual_dt["@I5@"].name, GedcomFile._individual_dt["@I5@"].birth])
+
+
+        actual = self.gedcom.US32_list_multiple_births()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
 if __name__ == '__main__':
     unittest.main()
