@@ -431,6 +431,79 @@ class GedcomFile:
                              print(output)
                              r.append(output2)
         return r
+    
+    
+    def US22_uni_ids_indi_fam(self):
+        '''All individual IDs should be unique and all family IDs should be unique '''
+        a = 0
+        famList = list()
+        indiList = list()
+        r = list()
+        for famid, v in self._family_dt.items():
+            if self._family_dt[famid].id !='NA':
+                famList.append(v)
+        for indid, vv in self._individual_dt.items():
+            if self._individual_dt[indid].id !='NA':
+                indiList.append(vv)
+
+        while a < len(famList):
+            b = a + 1
+            while b < len(famList):
+                if famList[a].id == famList[b].id:
+                    output = f"Error US22 Fammily ID'{famList[a].id}'  are smimilar for wife IDs in {famList[a].wife_id} and {famList[b].wife_id}"
+                    print(output)
+                    r.append(output)
+                b = b + 1
+            a = a + 1
+        
+        while a < len(indiList):
+            b = a + 1
+            while b < len(indiList):
+                if indiList[a].id == indiList[b].id:
+                    output = f"Error  US22 Indi ID'{indiList[a].id }'are smimilar with {indiList[b].id}"
+                    print(output)
+                    r.append(output)
+                b = b + 1
+            a = a + 1
+
+        return r
+
+
+    def US23_uni_name_birth(self):
+        ''' No more than one individual with the same name and birth date should appear in a GEDCOM file'''
+        a = 0 
+        indiName = list()
+        indiBirth = list()
+        r = list()
+
+        for indid, v in self._individual_dt.items():
+            if self._individual_dt[indid].id!='NA':
+                indiName.append(v)
+        
+        for indids, vv in self._individual_dt.items():
+            if self._individual_dt[indids].id !='NA':
+                indiBirth.append(vv)
+        
+        while a < len(indiName):
+            b = a + 1
+            while b < len(indiName):
+                if indiName[a].id == indiName[b].id:
+                    print('Error US23 INDIVIDUAL with ID '+indiName[a].id+ +'and Name' +indiName[a].name + 'are smimilar with other individuals with ID: '+ indiName[b].id +'Name:'+ indiName[b].name)
+                    
+                b = b + 1
+            a = a + 1
+        
+        while a < len(indiBirth):
+            b = a + 1
+            while b < len(indiBirth):
+                if indiBirth[a].id == indiBirth[b].id:
+                    print('Error US23 INDIVIDUALS with ID: ' + indiBirth[a].id+ 'and birthdate '+indiBirth[a].birth  + 'are smimilar with other individuals with ID: '+ indiBirth[a].id + 'Birth:' +indiBirth[a].birth)
+                    
+                b = b + 1
+            a = a + 1
+
+        
+        
 
 
     def US4_Marriage_before_divorce(self): 
@@ -713,6 +786,8 @@ def main() -> None:
     gedcom.US21_correct_gender_for_role()
     gedcom.US2_birth_before_marriage()
     gedcom.US5_marriage_before_death()
+    gedcom.US22_uni_ids_indi_fam()
+    gedcom.US23_uni_name_birth()
 
     #US30 & #US31
     gedcom.parse_individuals_based_on_living_and_marital_details()
