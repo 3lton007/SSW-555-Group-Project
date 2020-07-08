@@ -165,6 +165,8 @@ class GedcomFile:
     _family_dt: Dict[str, Family] = dict()
     _individuals_living_and_married: Dict[str, str] = dict()
     _individuals_living_over_thirty_and_never_married: Dict[str, str] = dict()
+    _list_of_duplicate_individual_ids: List[Individual] = list()
+    _list_of_duplicate_family_ids: List[Family] = list()
 
     def __init__(self) -> None:
         '''Sets containers to store the input and output lines'''
@@ -253,7 +255,11 @@ class GedcomFile:
                 # Since this is the start - Create the Individual!
                 individual: Individual = Individual()
                 individual_id: str = argument
-                self._individual_dt[individual_id] = individual
+
+                if individual_id in self._individual_dt:
+                    self._list_of_duplicate_individual_ids.append(individual)
+                else:
+                    self._individual_dt[individual_id] = individual
                 
             elif tag == "FAM":
                 # Subsequent records will define a family
@@ -263,7 +269,11 @@ class GedcomFile:
                 # Since this is the start - Create the Family!
                 family: Family = Family()
                 family_id: str = argument
-                self._family_dt[family_id] = family
+
+                if family_id in self._family_dt:
+                    self._list_of_duplicate_family_ids.append(family)
+                else:
+                    self._family_dt[family_id] = family
                 
             elif tag == "TRLR" or tag == "HEAD" or tag == "NOTE":
                  # this is neither a family or an individual.
@@ -284,6 +294,7 @@ class GedcomFile:
         for individual in self._individual_dt.values():
             individuals_pretty_table.add_row(individual.return_pretty_table_row())
         
+        individuals_pretty_table.sortby = 'ID'
         print("People")
         print(individuals_pretty_table)
         print("\n")
