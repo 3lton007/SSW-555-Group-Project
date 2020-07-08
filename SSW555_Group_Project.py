@@ -488,8 +488,9 @@ class GedcomFile:
             b = a + 1
             while b < len(indiName):
                 if indiName[a].id == indiName[b].id:
-                    print('Error US23 INDIVIDUAL with ID '+indiName[a].id+ +'and Name' +indiName[a].name + 'are smimilar with other individuals with ID: '+ indiName[b].id +'Name:'+ indiName[b].name)
-                    
+                    output = f"Error US23 INDIVIDUAL with ID '{indiName[a].id}' and Name {indiName[a].name}  are smimilar with other individuals with ID:  {indiName[b].id} Name: {indiName[b].name}"
+                    print(output)
+                    r.append(output)
                 b = b + 1
             a = a + 1
         
@@ -497,11 +498,11 @@ class GedcomFile:
             b = a + 1
             while b < len(indiBirth):
                 if indiBirth[a].id == indiBirth[b].id:
-                    print('Error US23 INDIVIDUALS with ID: ' + indiBirth[a].id+ 'and birthdate '+indiBirth[a].birth  + 'are smimilar with other individuals with ID: '+ indiBirth[a].id + 'Birth:' +indiBirth[a].birth)
-                    
+                    output = f"Error US23 INDIVIDUAL'S with ID  '{indiBirth[a].id}' and birthdate {indiBirth[a].birth}  are smimilar with other individuals with ID:  {indiBirth[a].id} Birth: {indiBirth[a].birth}"
+                    print(output)
+                    r.append(output)
                 b = b + 1
             a = a + 1
-
         
         
 
