@@ -443,80 +443,38 @@ class GedcomFile:
                              r.append(output2)
         return r
     
-    
-    def US22_uni_ids_indi_fam(self):
+      def US22_uni_ids_indi_fam(self):
         '''All individual IDs should be unique and all family IDs should be unique '''
-        a = 0
-        famList = list()
-        indiList = list()
-        r = list()
-        for famid, v in self._family_dt.items():
-            if self._family_dt[famid].id !='NA':
-                famList.append(v)
-        for indid, vv in self._individual_dt.items():
-            if self._individual_dt[indid].id !='NA':
-                indiList.append(vv)
 
-        while a < len(famList):
-            b = a + 1
-            while b < len(famList):
-                if famList[a].id == famList[b].id:
-                    output = f"Error US22 Fammily ID'{famList[a].id}'  are smimilar for wife IDs in {famList[a].wife_id} and {famList[b].wife_id}"
-                    print(output)
-                    r.append(output)
-                b = b + 1
-            a = a + 1
-        
-        while a < len(indiList):
-            b = a + 1
-            while b < len(indiList):
-                if indiList[a].id == indiList[b].id:
-                    output = f"Error  US22 Indi ID'{indiList[a].id }'are smimilar with {indiList[b].id}"
-                    print(output)
-                    r.append(output)
-                b = b + 1
-            a = a + 1
+        output = list()
+        for dup_family in self._list_of_duplicate_family_ids:
+            output.append(f"ERROR: US22: Family ID: {dup_family.id} with wife ID: {dup_family.wife_id} and husband ID: {dup_family.husband_id} "+\
+                     f"is a duplicate of Family ID: {dup_family.id} with wife ID: {self._family_dt[dup_family.id].wife_id} and husband id: {self._family_dt[dup_family.id].husband_id}")
 
-        return r
+        for dup_ind in self._list_of_duplicate_individual_ids:
+            output.append(f"ERROR: US22: Individual ID: {dup_ind.id} with name {dup_ind.name} is a duplicate of individual ID {dup_ind.id} "+\
+                     f"with name {self._individual_dt[dup_ind.id].name}")
 
+        for entry in output:
+            print(entry)
+        return output
 
+    
     def US23_uni_name_birth(self):
         ''' No more than one individual with the same name and birth date should appear in a GEDCOM file'''
-        a = 0 
-        indiName = list()
-        indiBirth = list()
-        r = list()
-
-        for indid, v in self._individual_dt.items():
-            if self._individual_dt[indid].id!='NA':
-                indiName.append(v)
-        
-        for indids, vv in self._individual_dt.items():
-            if self._individual_dt[indids].id !='NA':
-                indiBirth.append(vv)
-        
-        while a < len(indiName):
-            b = a + 1
-            while b < len(indiName):
-                if indiName[a].id == indiName[b].id:
-                    output = f"Error US23 INDIVIDUAL with ID '{indiName[a].id}' and Name {indiName[a].name}  are smimilar with other individuals with ID:  {indiName[b].id} Name: {indiName[b].name}"
-                    print(output)
-                    r.append(output)
-                b = b + 1
-            a = a + 1
-        
-        while a < len(indiBirth):
-            b = a + 1
-            while b < len(indiBirth):
-                if indiBirth[a].id == indiBirth[b].id:
-                    output = f"Error US23 INDIVIDUAL'S with ID  '{indiBirth[a].id}' and birthdate {indiBirth[a].birth}  are smimilar with other individuals with ID:  {indiBirth[a].id} Birth: {indiBirth[a].birth}"
-                    print(output)
-                    r.append(output)
-                b = b + 1
-            a = a + 1
-        
-        
-
+        for inid, vals in self._individual_dt.items():
+            dup_names = list()
+            dup_birthdates = list()
+            for ids in self._individual_dt.keys():
+                if self._individual_dt[ids].name == vals.name:
+                    dup_names.append(ids)
+            if len (dup_names) > 1:
+                for ids in dup_names:
+                    if self._individual_dt[ids].birth == vals.birth:
+                        dup_birthdates.append(ids)
+                if len(dup_birthdates) > 1:
+                    print('ERROR US23 Individuals  ids' +inid + 'and name' +vals.name+ 'found duplicated name and birthdate')
+    
 
     def US4_Marriage_before_divorce(self): 
         '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
