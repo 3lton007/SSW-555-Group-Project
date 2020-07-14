@@ -475,8 +475,9 @@ class GedcomFile:
                         dup_birthdates.append(idis)
                 if len(dup_birthdates) > 1:
                     output = f"ERROR US23 Individuals ids {inid} and name {vals.name} found duplicated name and birthdate"
+                    print(output)
                     r.append(output)
-          return r
+         return r
     
 
     def US4_Marriage_before_divorce(self): 
