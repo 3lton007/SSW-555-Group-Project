@@ -465,6 +465,7 @@ class GedcomFile:
         for inid, vals in self._individual_dt.items():
             dup_names = list()
             dup_birthdates = list()
+            r = list()
             for ids in self._individual_dt.keys():
                 if self._individual_dt[ids].name == vals.name:
                     dup_names.append(ids)
@@ -473,7 +474,9 @@ class GedcomFile:
                     if self._individual_dt[idis].birth == vals.birth:
                         dup_birthdates.append(idis)
                 if len(dup_birthdates) > 1:
-                    print('ERROR US23 Individuals  ids' +inid + 'and name' +vals.name+ 'found duplicated name and birthdate')
+                    output = f"ERROR US23 Individuals ids {inid} and name {vals.name} found duplicated name and birthdate"
+                    r.append(output)
+          return r
     
 
     def US4_Marriage_before_divorce(self): 
