@@ -469,9 +469,9 @@ class GedcomFile:
                 if self._individual_dt[ids].name == vals.name:
                     dup_names.append(ids)
             if len (dup_names) > 1:
-                for ids in dup_names:
-                    if self._individual_dt[ids].birth == vals.birth:
-                        dup_birthdates.append(ids)
+                for idis in dup_names:
+                    if self._individual_dt[idis].birth == vals.birth:
+                        dup_birthdates.append(idis)
                 if len(dup_birthdates) > 1:
                     print('ERROR US23 Individuals  ids' +inid + 'and name' +vals.name+ 'found duplicated name and birthdate')
     
