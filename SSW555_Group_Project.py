@@ -844,8 +844,6 @@ def main() -> None:
     gedcom.US21_correct_gender_for_role()
     gedcom.US2_birth_before_marriage()
     gedcom.US5_marriage_before_death()
-    gedcom.US22_uni_ids_indi_fam()
-    gedcom.US23_uni_name_birth()
 
     #US30 & #US31
     gedcom.parse_individuals_based_on_living_and_marital_details()
@@ -864,7 +862,8 @@ def main() -> None:
     # Sprint 03
     gedcom.US32_list_multiple_births()
     gedcom.US33_list_orphans()
-
+    gedcom.US22_uni_ids_indi_fam()
+    gedcom.US23_uni_name_birth()
 
 if __name__ == '__main__':
     main()
