@@ -669,6 +669,97 @@ class main_testing(unittest.TestCase):
         self.assertEqual(expected_pt.get_string(), actual_pt.get_string())
 
 
+    def test_US22_uni_ids_indi_fam(self):
+        # For this test we are not depending on the dictionaries created as part of the test setup, since we're
+        # partially testing the parser. So, clear the containers.
+        self.gedcom._individual_dt.clear()
+        self.gedcom._family_dt.clear()
+        self.gedcom._individuals_living_and_married.clear()
+        self.gedcom._individuals_living_over_thirty_and_never_married.clear()
+        self.gedcom._validated_list.clear()
+
+        # Create two different families with unique individuals, but with the same exact Family ID ('@EA1@')
+                                     #Level,  Tag,    Argument
+        
+        # Family 1:
+        self.gedcom._validated_list.append([0, 'INDI',  '@E0@'          ])
+        self.gedcom._validated_list.append([1, 'NAME',  'Radi /Alofi/'  ])
+        self.gedcom._validated_list.append([1, 'SEX',   'F'             ])
+        self.gedcom._validated_list.append([1, 'BIRT',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '10 MAR 2000'   ])
+        self.gedcom._validated_list.append([1, 'FAMS',  '@EA1@'         ])
+
+        self.gedcom._validated_list.append([0, 'INDI',  '@E1@'          ])
+        self.gedcom._validated_list.append([1, 'NAME',  'Roaa /Alofi/'  ])
+        self.gedcom._validated_list.append([1, 'SEX',   'F'             ])
+        self.gedcom._validated_list.append([1, 'BIRT',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '10 MAR 2000'   ])
+        self.gedcom._validated_list.append([1, 'FAMS',  '@EA1@'         ])
+
+        self.gedcom._validated_list.append([0, 'FAM',   '@EA1@'         ])
+        self.gedcom._validated_list.append([1, 'HUSB',  '@E0@'          ])
+        self.gedcom._validated_list.append([1, 'WIFE',  '@E1@'          ])
+        self.gedcom._validated_list.append([1, 'MARR',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '1 APR 2020'    ])
+
+        # Family 2: The Duplicate Family
+        self.gedcom._validated_list.append([0, 'INDI',  '@E2@'          ])
+        self.gedcom._validated_list.append([1, 'NAME',  'Radi /Alofi/'  ])
+        self.gedcom._validated_list.append([1, 'SEX',   'F'             ])
+        self.gedcom._validated_list.append([1, 'BIRT',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '10 MAR 2000'   ])
+        self.gedcom._validated_list.append([1, 'FAMS',  '@EA1@'         ])
+
+        self.gedcom._validated_list.append([0, 'INDI', '@E3@'           ])
+        self.gedcom._validated_list.append([1, 'NAME', 'Roaa /Alofi/'   ])
+        self.gedcom._validated_list.append([1, 'SEX',  'F'              ])
+        self.gedcom._validated_list.append([1, 'BIRT', ''               ])
+        self.gedcom._validated_list.append([2, 'DATE', '10 MAR 2000'    ])
+        self.gedcom._validated_list.append([1, 'FAMS', '@EA1@'          ])
+
+        self.gedcom._validated_list.append([0, 'FAM',  '@EA1@'          ])
+        self.gedcom._validated_list.append([1, 'HUSB', '@E2@'           ])
+        self.gedcom._validated_list.append([1, 'WIFE', '@E3@'           ])
+        self.gedcom._validated_list.append([1, 'MARR', ''               ])
+        self.gedcom._validated_list.append([2, 'DATE', '1 APR 2019'     ])
+
+        # Add a duplicate individual with the exact same ID
+        self.gedcom._validated_list.append([0, 'INDI',  '@E2@'          ])
+        self.gedcom._validated_list.append([1, 'NAME',  'Jess /Soares/' ])
+        self.gedcom._validated_list.append([1, 'SEX',   'F'             ])
+        self.gedcom._validated_list.append([1, 'BIRT',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '1 JAN 2004'    ])
+
+
+        # Kick off the parser to create the individuals and families, and to detect the duplicates.
+        self.gedcom.parse_validated_gedcom()
+
+        # Expect the Duplicate family
+        expect = ["ERROR: US22: Family ID: @EA1@ with wife ID: @E3@ and husband ID: @E2@ "+\
+                "is a duplicate of Family ID: @EA1@ with wife ID: @E1@ and husband id: @E0@"]
+ 
+        # Expect the duplicate individual
+        expect.append(f"ERROR: US22: Individual ID: @E2@ with name Jess /Soares/ is a duplicate of individual ID @E2@ "+\
+                     f"with name Radi /Alofi/")
+
+        # Call method under test
+        result = GedcomFile.US22_uni_ids_indi_fam(self.gedcom)
+
+        self.assertEqual(expect, result)
+        
+
+
+
+    def test_US23_uni_name_birth(self):
+        # Rise an error if the both individuals have same name and birthdates 
+        GedcomFile._individual_dt["@I5@"].name = "Safa /Alofi/"
+        GedcomFile._individual_dt["@I5@"].birth =  datetime.date(1990,5,16)
+        GedcomFile._individual_dt["@I6@"].name = "Safa /Alofi/"
+        GedcomFile._individual_dt["@I6@"].birth =  datetime.date(1990,5,16)
+        result = GedcomFile.US23_uni_name_birth(self.gedcom)
+        expect = ["ERROR US23 Individuals ids @I5@ and name Safa /Alofi/ found duplicated name and birthdate", "ERROR US23 Individuals ids @I6@ and name Safa /Alofi/ found duplicated name and birthdate"] 
+        self.assertEqual(expect, result)
+
 
 
     def test_US02_birth_before_marriage(self):
