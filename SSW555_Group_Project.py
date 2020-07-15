@@ -389,6 +389,31 @@ class GedcomFile:
                         x.add(k.id)
 
         return x
+
+    def US16_male(self):
+        '''' Male members of the family must have the same last name'''
+        r = []
+        for x in self._family_dt.values():
+            h_id = self._individual_dt[x.husband_id].id
+            fullname = self._individual_dt[x.husband_id].name
+            last_name = (self._individual_dt[x.husband_id].name).split('/')[-2]
+            child_lname = []
+            if x.husband_id != 'NA' and x.children:
+                for child_id in x.children:
+                    c = self._individual_dt[child_id]
+                    if c.sex == 'M':
+                        child_lname.append(c.name.split('/')[-2])
+
+                for name in child_lname:
+                    if name != last_name:
+                        output = f"Error: US16: Family ID:{x.id} Last name do not match, Father's Name:{fullname} ID:{h_id} and Child's Name: {c.name} Child ID: {c.id}"
+                        print(output)
+                        r.append(x.id)
+    
+    
+
+
+
                         
     def US2_birth_before_marriage(self):
         ''''Birth should occur before marriage of an individual'''
@@ -805,6 +830,7 @@ def main() -> None:
     gedcom.US06_divorce_before_death()
     gedcom.US07_Death150()
     gedcom.US12_Mother_Father_older()
+    gedcom.US16_male()
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
     gedcom.US36_list_recent_deaths()
     gedcom.US37_list_recent_survivors()
