@@ -1027,6 +1027,42 @@ class main_testing(unittest.TestCase):
         actual = self.gedcom.US33_list_orphans()
         self.assertEqual(expected_pt.get_string(), actual.get_string())
 
+    def test_US24_unique_families_by_spouses(self) -> None:
+        '''tests that the method implemented for US24 highlight the case where more than one family has the same spouses and marriage date'''
+
+        #Making @F_test1 and @F_test2 the same as @F_test0:
+        GedcomFile._family_dt['@F_test1'].husband_name = 'Test Subject0'
+        GedcomFile._family_dt['@F_test1'].wife_name = 'Test Subject1'
+        GedcomFile._family_dt['@F_test1'].marriage_date = datetime.date(1930,1,1)
+
+        GedcomFile._family_dt['@F_test2'].husband_name = 'Test Subject0'
+        GedcomFile._family_dt['@F_test2'].wife_name = 'Test Subject1'
+        GedcomFile._family_dt['@F_test2'].marriage_date = datetime.date(1930,1,1)
+
+        #Making @F_test4 the same as @F_test3:
+        GedcomFile._family_dt['@F_test4'].husband_name = 'Test Subject6'
+        GedcomFile._family_dt['@F_test4'].wife_name = 'Test Subject7'
+        GedcomFile._family_dt['@F_test4'].marriage_date = datetime.date(1960,4,4)
+        
+        result = GedcomFile.US24_unique_families_by_spouses(self.gedcom)
+
+        print(f'------US24 RESULT: {result}')
+
+        expected = [
+                f'ANOMALY: US24: Families @F_test0, @F_test1, @F_test2, have the same spouses and marriage date: Husband: Test Subject0, Wife: Test Subject1, Marriage Date: 1930-01-01',
+                f'ANOMALY: US24: Families @F_test3, @F_test4, have the same spouses and marriage date: Husband: Test Subject6, Wife: Test Subject7, Marriage Date: 1960-04-04',
+                
+                ]
+
+        self.assertEqual(result, expected)
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -821,6 +821,59 @@ class GedcomFile:
         return orphan_pt
 
 
+    def US24_unique_families_by_spouses(self) -> List[str]:
+        '''Identifies multiple families that have the same spouses and marriage date'''
+
+        list_of_families: List[Family] = self.US24_set_list_of_families()
+        output: List[str] = list()
+
+        while True:
+            if len(list_of_families) == 0: break
+            family_ids_with_matching_spouses_and_marriage_date = list()
+            
+            family_being_compared: Family = list_of_families.pop(0)
+            detail_for_family_being_compared = [family_being_compared.husband_name, family_being_compared.wife_name, family_being_compared.marriage_date]
+            family_ids_with_matching_spouses_and_marriage_date.append(family_being_compared.id)
+
+            for fam in list_of_families:
+                if [fam.husband_name, fam.wife_name, fam.marriage_date] == detail_for_family_being_compared:
+                    family_ids_with_matching_spouses_and_marriage_date.append(fam.id)
+
+            if len(family_ids_with_matching_spouses_and_marriage_date) > 1:
+                anomaly_message: str = self.US24_set_output_message(family_ids_with_matching_spouses_and_marriage_date, detail_for_family_being_compared)
+                print(anomaly_message)
+                output.append(anomaly_message)
+
+            for family in list_of_families:
+                if family.id in family_ids_with_matching_spouses_and_marriage_date:
+                    list_of_families.remove(family)
+
+        return output
+
+    def US24_set_list_of_families(self) -> List[Family]:
+        '''Traverses through the _family_dt to extract only the families that have husband name, wife name, and marriage date all poulated, and puts them in a list'''
+        
+        list_of_families: List[Family] = list()
+
+        for family in self._family_dt.values():
+            if family.husband_id == 'TBD' or family.wife_id == 'TBD' or family.marriage_date == 'NA':
+                continue
+            else:
+                list_of_families.append(family)
+
+        return list_of_families
+
+    def US24_set_output_message(self, list_of_family_ids: List[str], family_detail: List[str]) -> str:
+        '''Sets up the output message for US24'''
+
+        family_ids: str = ', '.join(list_of_family_ids)
+        husband: str = family_detail[0]
+        wife: str = family_detail[1]
+        marriage_date: str = family_detail[2]
+
+        return f'ANOMALY: US24: Families {family_ids}, have the same spouses and marriage date: Husband: {husband}, Wife: {wife}, Marriage Date: {marriage_date}'
+ 
+
 def main() -> None:
     '''Runs main program'''
 
@@ -864,6 +917,7 @@ def main() -> None:
     gedcom.US33_list_orphans()
     gedcom.US22_uni_ids_indi_fam()
     gedcom.US23_uni_name_birth()
-
+    gedcom.US24_unique_families_by_spouses()
+    
 if __name__ == '__main__':
     main()
