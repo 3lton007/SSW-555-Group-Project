@@ -738,11 +738,93 @@ class GedcomFile:
         return pt_survivors
 
 
+    def US32_list_multiple_births(self)->None:
+        ''' 
+        List all multiple births
+        A multiple birth is 2 or more offspring born in the same birth event. Normally they are born within seconds 
+        of eachother. In case of complications it could be hours. Because they are not born precisely at the same time,
+        it is possible for twins to be born on different days, years, centuries, etc.
+        e.g. twin 1 born at 11:59:30 on DEC 31st 1999 and twin 2 born 30 seconds later on JAN 1st 2000.
+
+        We will make an assumption that a multiple birth occurred if sibblings are born within 1 day of eachother.
+        '''
+        multiple_births_pt: PrettyTable = PrettyTable(field_names = ['Family ID', 'Child ID', 'Child Name', 'Child Birth Date'])
+        multiple_birth_set = set()
+
+        # Go through each and every family
+        for fam in self._family_dt.values():
+
+            child_lst = list()
+            for child in list(fam.children):
+                child_lst.append(self._individual_dt[child])
+
+            # Compare each sibling against eachother, ensuring that siblings aren't compared with themselves.
+            for i in range (len(child_lst)):
+                for j in range (i+1, len(child_lst)):
+                    # if birthdate not provided, then skip
+                    if type(child_lst[i].birth) == str or type(child_lst[j].birth) == str:
+                        continue
+
+                    # Subtract birthdates. If the difference is one day or less, then both are part of same multiple birth
+                    diff_days = abs((child_lst[i].birth - child_lst[j].birth).days)
+                    if diff_days <= 1:
+                        multiple_birth_set.add(child_lst[i])
+                        multiple_birth_set.add(child_lst[j])
+
+        for child in multiple_birth_set:
+            multiple_births_pt.add_row([str(child.famc), child.id, child.name, child.birth])
+
+        if len(multiple_birth_set) > 0:
+            multiple_births_pt.sortby = 'Family ID'
+            print(f"\nUS32: Multiple Births:\n{multiple_births_pt}")
+        return multiple_births_pt
+
+
+
+
+    def US33_list_orphans(self)->None:
+        '''
+        List all orphaned children (both parents dead and child < 18 years old).
+        If an individual has no parents listed, they won't be listed as an orphan. 
+        Individuals will be listed regardless of whether they are living or dead.
+        '''
+
+        orphan_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        num_pt_entries = 0
+        for person in self._individual_dt.values():
+
+            # Only orphan if parents are dead. If no parents are listed, skip this individual.
+            if len(person.famc) == 0:
+                continue
+
+            # If we can't determine an age, skip that person. Otherwise, check for age requirement
+            if type(person.age) != str and person.age < 18:
+
+                # Loop through all famc families. We only expect one, but it may be possible for a child
+                # to be present in multiple families if they are adopted. Here we are defining an orphan
+                # as a child < 18 years old who has no living parents, biological or not.
+                orphan = True
+
+                for family in person.famc:
+                    mother_id = self._family_dt[family].wife_id
+                    father_id = self._family_dt[family].husband_id
+                    if self._individual_dt[mother_id].living or self._individual_dt[father_id].living:
+                        orphan = False
+                
+                if orphan:
+                    orphan_pt.add_row([person.famc or "None", person.id, person.name])
+                    num_pt_entries += 1
+
+        if num_pt_entries > 0:
+            orphan_pt.sortby = 'Individual ID'
+            print(f"\nUS33: List Orphans:\n{orphan_pt}")
+        return orphan_pt
+
+
 def main() -> None:
     '''Runs main program'''
 
     file_name: str = input('Enter GEDCOM file name: ')
-    #file_name: str = "p1.ged"
     
     gedcom: GedcomFile = GedcomFile()
     gedcom.read_file(file_name)
@@ -777,6 +859,12 @@ def main() -> None:
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
     gedcom.US36_list_recent_deaths()
     gedcom.US37_list_recent_survivors()
+
+    
+    # Sprint 03
+    gedcom.US32_list_multiple_births()
+    gedcom.US33_list_orphans()
+
 
 if __name__ == '__main__':
     main()
