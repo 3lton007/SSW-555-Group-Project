@@ -443,7 +443,7 @@ class GedcomFile:
                              r.append(output2)
         return r
     
-      def US22_uni_ids_indi_fam(self):
+    def US22_uni_ids_indi_fam(self):
         '''All individual IDs should be unique and all family IDs should be unique '''
 
         output = list()
@@ -462,10 +462,12 @@ class GedcomFile:
     
     def US23_uni_name_birth(self):
         ''' No more than one individual with the same name and birth date should appear in a GEDCOM file'''
+        r = list()
+
         for inid, vals in self._individual_dt.items():
             dup_names = list()
             dup_birthdates = list()
-            r = list()
+
             for ids in self._individual_dt.keys():
                 if self._individual_dt[ids].name == vals.name:
                     dup_names.append(ids)
@@ -477,7 +479,7 @@ class GedcomFile:
                     output = f"ERROR US23 Individuals ids {inid} and name {vals.name} found duplicated name and birthdate"
                     print(output)
                     r.append(output)
-         return r
+        return r
     
 
     def US4_Marriage_before_divorce(self): 
