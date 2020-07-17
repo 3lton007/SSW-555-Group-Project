@@ -1044,11 +1044,9 @@ class main_testing(unittest.TestCase):
         GedcomFile._family_dt['@F_test4'].wife_name = 'Test Subject7'
         GedcomFile._family_dt['@F_test4'].marriage_date = datetime.date(1960,4,4)
         
-        result = GedcomFile.US24_unique_families_by_spouses(self.gedcom)
+        result: List[str] = GedcomFile.US24_unique_families_by_spouses(self.gedcom)
 
-        print(f'------US24 RESULT: {result}')
-
-        expected = [
+        expected: List[str] = [
                 f'ANOMALY: US24: Families @F_test0, @F_test1, @F_test2, have the same spouses and marriage date: Husband: Test Subject0, Wife: Test Subject1, Marriage Date: 1930-01-01',
                 f'ANOMALY: US24: Families @F_test3, @F_test4, have the same spouses and marriage date: Husband: Test Subject6, Wife: Test Subject7, Marriage Date: 1960-04-04',
                 
@@ -1056,12 +1054,33 @@ class main_testing(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
+    def test_US25_unique_first_names_in_families(self) -> None:
+        '''tests that the method implemented for US25 highlights the case where more than one child has the same name and birth date in the same family'''
 
+        #Setting individuals "@I1@" and "@I2@" to have same name and birth date as inividual "@I0@", and putting them all as children in family "@F_test0"
+        GedcomFile._individual_dt['@I1@'].name = 'Test Subject0'
+        GedcomFile._individual_dt['@I1@'].birth = datetime.date(1900,12,12)
+        GedcomFile._individual_dt['@I2@'].name = 'Test Subject0'
+        GedcomFile._individual_dt['@I2@'].birth = datetime.date(1900,12,12)
+        GedcomFile._family_dt['@F_test0'].children = ({'@I0@', '@I1@', '@I2@'})
 
+        #Setting individual "@I6@" to have same name and birth date as individual "@I5@", and putting them all as children in family "@F_test3"
+        GedcomFile._individual_dt['@I6@'].name = 'Test Subject5'
+        GedcomFile._individual_dt['@I6@'].birth = datetime.date(1920,7,7)
+        GedcomFile._family_dt['@F_test3'].children = ({'@I5@', '@I6@'})
 
+        result: List[str] = GedcomFile.US25_unique_first_names_in_families(self.gedcom)
 
+        child_ids_for_fam0: Set[str] = ', '.join(GedcomFile._family_dt['@F_test0'].children)
+        child_ids_for_fam3: Set[str] = ', '.join(GedcomFile._family_dt['@F_test3'].children)
+        
+        expected: List[str] = [
+                f'ANOMALY: US25: Individuals {child_ids_for_fam0} from family @F_test0, have the same name and birth date: Name: Test Subject0, Birth Date: 1900-12-12',
+                f'ANOMALY: US25: Individuals {child_ids_for_fam3} from family @F_test3, have the same name and birth date: Name: Test Subject5, Birth Date: 1920-07-07',
 
+        ]
 
+        self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':
