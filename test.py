@@ -441,6 +441,31 @@ class main_testing(unittest.TestCase):
         result = GedcomFile.US12_Mother_Father_older(self.gedcom)
         self.assertEqual(set(), result)
 
+    def test_US16(self):
+        
+        # Family1 same name
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set(["@I2@"])
+
+        GedcomFile._individual_dt["@I0@"].name = 'aran /kel/ '
+        GedcomFile._individual_dt["@I1@"].name = 'molly /kel/ '
+        GedcomFile._individual_dt["@I2@"].name = 'jo /kel/ '
+
+        # Family2 differennt name
+        GedcomFile._family_dt["@F_test1"].husband_id = "@I4@"
+        GedcomFile._family_dt["@F_test1"].wife_id =    "@I5@"
+        GedcomFile._family_dt["@F_test1"].children = set(["@I6@"])
+
+        GedcomFile._individual_dt["@I0@"].name = 'yash /smith/ '
+        GedcomFile._individual_dt["@I1@"].name = 'ind /smith/ '
+        GedcomFile._individual_dt["@I2@"].name = 'shree /pal/ '
+
+        result = GedcomFile.US16_male(self.gedcom)
+        self.assertEqual(["@F_test1"], result)
+
+
+
 
 
 
