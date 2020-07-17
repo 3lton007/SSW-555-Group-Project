@@ -410,7 +410,76 @@ class GedcomFile:
                         print(output)
                         r.append(x.id)
     
-    
+    def US19_cousins(self) -> None:
+        ''' First cousins cannot marry each other'''
+
+        r = []
+        count = 0
+
+        for k, v in self._family_dt.items():
+            hubby = v.husband_id
+            wife = v.wife_id
+
+            hubby_d = 'a'
+            hubby_m = 'b'
+            wife_d = 'c'
+            wife_m = 'd'
+            hubby_mgm = 'e'
+            hubby_mgp = 'f'
+            wife_mgp = 'g'
+            wife_mgm = 'h'
+            hubby_pgm = 'i'
+            hubby_pgp = 'j'
+            wife_pgp = 'k'
+            wife_pgm = 'l'
+
+            for k, v in self._family_dt.items():
+                for x in v.children:
+                    if x == hubby:
+                        hubby_d = v.husband_id
+                        hubby_m = v.wife_id
+
+                        for k, v in self._family_dt.items():
+                            for y in v.children:
+                                if y == hubby_d:
+                                    hubby_pgp = v.husband_id
+                                    hubby_pgm = v.wife_id
+                                    break
+
+                        for k, v in self._family_dt.items():
+                            for z in v.children:
+                                if z == hubby_m:
+                                    hubby_mgp = v.husband_id
+                                    hubby_mgm = v.wife_id
+                                    break
+
+            for k, v in self._family_dt.items():
+                for a in v.children:
+                    if a == wife:
+                        wife_d = v.husband_id
+                        wife_m = v.wife_id
+
+                        for k, v in self._family_dt.items():
+                            for b in v.children:
+                                if b == wife_d:
+                                    wife_pgp = v.husband_id
+                                    wife_pgm = v.wife_id
+                                    break
+
+                        for k, v in self._family_dt.items():
+                            for c in v.children:
+                                if z == wife_m:
+                                    wife_mgp = v.husband_id
+                                    wife_mgm = v.wife_id
+                                    break   
+        if (hubby_pgm == wife_pgm or hubby_mgm == wife_pgm or hubby_mgm == wife_mgm):
+            print(f"ERROR: US19: Family id:{k} Husband name:{v.husband_name}, husband id:{v.husband_id} and wife name:{v.wife_name},wife id:{v.wife_id} are first cousins")
+            
+                                    
+
+                    
+
+
 
 
 
@@ -839,6 +908,7 @@ def main() -> None:
     # Sprint 03
     gedcom.US32_list_multiple_births()
     gedcom.US33_list_orphans()
+    gedcom.US19_cousins()
 
 
 if __name__ == '__main__':
