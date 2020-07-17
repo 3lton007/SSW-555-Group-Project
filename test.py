@@ -457,12 +457,13 @@ class main_testing(unittest.TestCase):
         GedcomFile._family_dt["@F_test1"].wife_id =    "@I5@"
         GedcomFile._family_dt["@F_test1"].children = set(["@I6@"])
 
-        GedcomFile._individual_dt["@I0@"].name = 'yash /smith/ '
-        GedcomFile._individual_dt["@I1@"].name = 'ind /smith/ '
-        GedcomFile._individual_dt["@I2@"].name = 'shree /pal/ '
+        GedcomFile._individual_dt["@I4@"].name = 'yash /smith/ '
+        GedcomFile._individual_dt["@I5@"].name = 'ind /smith/ '
+        GedcomFile._individual_dt["@I6@"].name = 'shree /pal/ '
 
         result = GedcomFile.US16_male(self.gedcom)
         self.assertEqual(["@F_test1"], result)
+
 
 
 
