@@ -900,6 +900,7 @@ def main() -> None:
     gedcom.US07_Death150()
     gedcom.US12_Mother_Father_older()
     gedcom.US16_male()
+    gedcom.US19_cousins()
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
     gedcom.US36_list_recent_deaths()
     gedcom.US37_list_recent_survivors()
@@ -908,7 +909,7 @@ def main() -> None:
     # Sprint 03
     gedcom.US32_list_multiple_births()
     gedcom.US33_list_orphans()
-    gedcom.US19_cousins()
+    
 
 
 if __name__ == '__main__':
