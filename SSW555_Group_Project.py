@@ -1,4 +1,4 @@
-from typing import Iterator, Tuple, IO, List, Dict, Set
+from typing import Iterator, Tuple, IO, List, Dict, Set, DefaultDict
 from collections import defaultdict
 import datetime
 import os
@@ -823,7 +823,64 @@ class GedcomFile:
         marriage_date: str = family_detail[2]
 
         return f'ANOMALY: US24: Families {family_ids}, have the same spouses and marriage date: Husband: {husband}, Wife: {wife}, Marriage Date: {marriage_date}'
- 
+
+    def US25_unique_first_names_in_families(self) -> None:
+        '''Traverses through the _family_dt and checks each family's children to see if multiple children have the same name and birth date'''
+        
+        output: List[str] = list()
+
+        for family_id, children in self.US25_set_list_of_children_in_a_family():
+            family_id: str = family_id
+            list_of_children_in_family: List[Individual] = children
+        
+            while True:
+                if len(list_of_children_in_family) == 0: break
+                child_ids_with_matching_name_and_birth_date: List[str] = list()
+
+                child_being_compared: Individual = list_of_children_in_family.pop(0)
+                detail_for_child_being_compared: List[str] = [child_being_compared.name, child_being_compared.birth]
+                child_ids_with_matching_name_and_birth_date.append(child_being_compared.id)
+
+                for child in list_of_children_in_family:
+                        if [child.name, child.birth] == detail_for_child_being_compared:
+                            child_ids_with_matching_name_and_birth_date.append(child.id)
+                
+                if len(child_ids_with_matching_name_and_birth_date) > 1:
+                    anomaly_message: str = self.US25_set_output_message(child_ids_with_matching_name_and_birth_date, detail_for_child_being_compared, family_id)
+                    print(anomaly_message)
+                    output.append(anomaly_message)
+                            
+                for child in list_of_children_in_family:
+                    if child.id in child_ids_with_matching_name_and_birth_date:
+                        list_of_children_in_family.remove(child)
+
+        return output
+
+    def US25_set_list_of_children_in_a_family(self) -> Iterator[List[Individual]]:
+        '''Traverses through the _family_dt to extract only the families that have multiple children'''
+
+        children_in_family: List[Individual] = list()
+
+        for family in self._family_dt.values():
+            if len(family.children) <= 1:
+                continue
+            else:
+                for child_id in family.children:
+                    children_in_family.append(self._individual_dt[child_id])
+                
+                yield family.id, children_in_family
+                children_in_family = list()
+
+    def US25_set_output_message(self, list_of_child_ids: List[str], child_detail: List[str], family_id: str):
+        '''Sets up the output message for US24'''
+
+        child_ids: str = ', '.join(list_of_child_ids)
+        family_id: str = family_id
+        name: str = child_detail[0]
+        birth_date: str = child_detail[1]
+
+        return f'ANOMALY: US25: Individuals {child_ids} from family {family_id}, have the same name and birth date: Name: {name}, Birth Date: {birth_date}'
+
 
 def main() -> None:
     '''Runs main program'''
@@ -868,6 +925,7 @@ def main() -> None:
     gedcom.US33_list_orphans()
 
     gedcom.US24_unique_families_by_spouses()
+    gedcom.US25_unique_first_names_in_families()
 
 if __name__ == '__main__':
     main()
