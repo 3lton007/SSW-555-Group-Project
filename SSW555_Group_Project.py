@@ -165,6 +165,8 @@ class GedcomFile:
     _family_dt: Dict[str, Family] = dict()
     _individuals_living_and_married: Dict[str, str] = dict()
     _individuals_living_over_thirty_and_never_married: Dict[str, str] = dict()
+    _list_of_duplicate_individual_ids: List[Individual] = list()
+    _list_of_duplicate_family_ids: List[Family] = list()
 
     def __init__(self) -> None:
         '''Sets containers to store the input and output lines'''
@@ -253,7 +255,11 @@ class GedcomFile:
                 # Since this is the start - Create the Individual!
                 individual: Individual = Individual()
                 individual_id: str = argument
-                self._individual_dt[individual_id] = individual
+
+                if individual_id in self._individual_dt:
+                    self._list_of_duplicate_individual_ids.append(individual)
+                else:
+                    self._individual_dt[individual_id] = individual
                 
             elif tag == "FAM":
                 # Subsequent records will define a family
@@ -263,7 +269,11 @@ class GedcomFile:
                 # Since this is the start - Create the Family!
                 family: Family = Family()
                 family_id: str = argument
-                self._family_dt[family_id] = family
+
+                if family_id in self._family_dt:
+                    self._list_of_duplicate_family_ids.append(family)
+                else:
+                    self._family_dt[family_id] = family
                 
             elif tag == "TRLR" or tag == "HEAD" or tag == "NOTE":
                  # this is neither a family or an individual.
@@ -284,6 +294,7 @@ class GedcomFile:
         for individual in self._individual_dt.values():
             individuals_pretty_table.add_row(individual.return_pretty_table_row())
         
+        individuals_pretty_table.sortby = 'ID'
         print("People")
         print(individuals_pretty_table)
         print("\n")
@@ -431,7 +442,45 @@ class GedcomFile:
                              print(output)
                              r.append(output2)
         return r
+    
+    def US22_uni_ids_indi_fam(self):
+        '''All individual IDs should be unique and all family IDs should be unique '''
 
+        output = list()
+        for dup_family in self._list_of_duplicate_family_ids:
+            output.append(f"ERROR: US22: Family ID: {dup_family.id} with wife ID: {dup_family.wife_id} and husband ID: {dup_family.husband_id} "+\
+                     f"is a duplicate of Family ID: {dup_family.id} with wife ID: {self._family_dt[dup_family.id].wife_id} and husband id: {self._family_dt[dup_family.id].husband_id}")
+
+        for dup_ind in self._list_of_duplicate_individual_ids:
+            output.append(f"ERROR: US22: Individual ID: {dup_ind.id} with name {dup_ind.name} is a duplicate of individual ID {dup_ind.id} "+\
+                     f"with name {self._individual_dt[dup_ind.id].name}")
+
+        for entry in output:
+            print(entry)
+        return output
+
+    
+    def US23_uni_name_birth(self):
+        ''' No more than one individual with the same name and birth date should appear in a GEDCOM file'''
+        r = list()
+
+        for inid, vals in self._individual_dt.items():
+            dup_names = list()
+            dup_birthdates = list()
+
+            for ids in self._individual_dt.keys():
+                if self._individual_dt[ids].name == vals.name:
+                    dup_names.append(ids)
+            if len (dup_names) > 1:
+                for idis in dup_names:
+                    if self._individual_dt[idis].birth == vals.birth:
+                        dup_birthdates.append(idis)
+                if len(dup_birthdates) > 1:
+                    output = f"ERROR US23 Individuals ids {inid} and name {vals.name} found duplicated name and birthdate"
+                    print(output)
+                    r.append(output)
+        return r
+    
 
     def US4_Marriage_before_divorce(self): 
         '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
@@ -923,9 +972,11 @@ def main() -> None:
     # Sprint 03
     gedcom.US32_list_multiple_births()
     gedcom.US33_list_orphans()
-
+    gedcom.US22_uni_ids_indi_fam()
+    gedcom.US23_uni_name_birth()
     gedcom.US24_unique_families_by_spouses()
     gedcom.US25_unique_first_names_in_families()
+
 
 if __name__ == '__main__':
     main()
