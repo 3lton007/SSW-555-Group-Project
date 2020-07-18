@@ -443,7 +443,7 @@ class GedcomFile:
                 
         return r
 
-    def US19_married_first_cousins(self):
+    def US19_married_first_cousins(self): 
         r = list()
         for fam in self._family_dt.values():
             grandparents =  self.find_grandparents(fam.husband_id)
