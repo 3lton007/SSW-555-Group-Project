@@ -396,25 +396,32 @@ class GedcomFile:
         for x in self._family_dt.values():
             h_id = self._individual_dt[x.husband_id].id
             fullname = self._individual_dt[x.husband_id].name
-            last_name = (self._individual_dt[x.husband_id].name).split('/')[-2]
+            if ('/' not in fullname):
+                continue
+
+            last_name = (self._individual_dt[x.husband_id].name).split('/')[1]
             child_lname = []
+
             if x.husband_id != 'NA' and x.children:
                 for child_id in x.children:
                     c = self._individual_dt[child_id]
                     if c.sex == 'M':
-                        child_lname.append(c.name.split('/')[-2])
+                        if ('/' not in c.name):
+                            continue
+
+                        child_lname.append(c.name.split('/')[1])
 
                 for name in child_lname:
                     if name != last_name:
-                        output = f"Error: US16: Family ID:{x.id} Last name do not match, Father's Name:{fullname} ID:{h_id} and Child's Name: {c.name} Child ID: {c.id}"
+                        output = f"ERROR: US16: Family ID:{x.id} Last name do not match, Father's Name:{fullname} ID:{h_id} and Child's Name: {c.name} Child ID: {c.id}"
                         print(output)
                         r.append(x.id)
+        return r
     
-    def US19_cousins(self) -> None:
+    def US19_cousins(self):
         ''' First cousins cannot marry each other'''
 
         r = []
-        count = 0
 
         for k, v in self._family_dt.items():
             hubby = v.husband_id
@@ -471,10 +478,12 @@ class GedcomFile:
                                 if z == wife_m:
                                     wife_mgp = v.husband_id
                                     wife_mgm = v.wife_id
-                                    break   
+                                    break 
+
         if (hubby_pgm == wife_pgm or hubby_mgm == wife_pgm or hubby_mgm == wife_mgm):
             print(f"ERROR: US19: Family id:{k} Husband name:{v.husband_name}, husband id:{v.husband_id} and wife name:{v.wife_name},wife id:{v.wife_id} are first cousins")
-            r.append(k)  
+            r.append(k)
+        return r  
                                     
 
                     
