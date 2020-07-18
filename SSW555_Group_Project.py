@@ -400,6 +400,77 @@ class GedcomFile:
                         x.add(k.id)
 
         return x
+
+    def US16_male(self):
+        '''' Male members of the family must have the same last name'''
+        r = []
+        for x in self._family_dt.values():
+            h_id = self._individual_dt[x.husband_id].id
+            fullname = self._individual_dt[x.husband_id].name
+            if ('/' not in fullname):
+                continue
+
+            last_name = (self._individual_dt[x.husband_id].name).split('/')[1]
+            child_lname = []
+
+            if x.husband_id != 'NA' and x.children:
+                for child_id in x.children:
+                    c = self._individual_dt[child_id]
+                    if c.sex == 'M':
+                        if ('/' not in c.name):
+                            continue
+
+                        child_lname.append(c.name.split('/')[1])
+
+                for name in child_lname:
+                    if name != last_name:
+                        output = f"ERROR: US16: Family ID:{x.id} Last name do not match, Father's Name:{fullname} ID:{h_id} and Child's Name: {c.name} Child ID: {c.id}"
+                        print(output)
+                        r.append(x.id)
+        return r
+
+    def families(self, family_set):
+        '''yields a family object for a given set of family ids'''
+        for family in family_set:
+            yield self._family_dt[family]
+
+    def find_grandparents(self, indi_id):
+        '''Finds all grandparents for a given individual'''
+        r = list()
+        indi = self._individual_dt[indi_id]
+
+        # Run through all the families where this individual is a child. Normally expected only 1 family.
+        for parent_fam in self.families(indi.famc):
+
+            # Find the grandparents on the father's side.
+            for grandparent_fam in self.families(self._individual_dt[parent_fam.husband_id].famc):
+                r.append(grandparent_fam.husband_id)
+                r.append(grandparent_fam.wife_id)
+
+            # Find the grandparents on the mother's side
+            for grandparent_fam in self.families(self._individual_dt[parent_fam.wife_id].famc):
+                r.append(grandparent_fam.husband_id)
+                r.append(grandparent_fam.wife_id)
+                
+        return r
+
+    def US19_married_first_cousins(self): 
+        r = list()
+        for fam in self._family_dt.values():
+            grandparents =  self.find_grandparents(fam.husband_id)
+            grandparents += self.find_grandparents(fam.wife_id)
+            
+            # OK, now we have a list of grandparents from both spouses.
+            # IF any grandparents are repeated in this list, then the spouses share a 
+            # grandparent - and therefore are first cousins.
+            if len(grandparents) == len(set(grandparents)):
+                continue
+            else:
+                print(f"ANOMALY: US19: Family id: {fam.id} Husband name: {fam.husband_name}, husband id: {fam.husband_id} and wife name: {fam.wife_name}, wife id: {fam.wife_id} are first cousins")
+                r.append(fam.id)
+        return(r)
+ 
+
                         
     def US2_birth_before_marriage(self):
         ''''Birth should occur before marriage of an individual'''
@@ -964,6 +1035,7 @@ def main() -> None:
     gedcom.US06_divorce_before_death()
     gedcom.US07_Death150()
     gedcom.US12_Mother_Father_older()
+    gedcom.US16_male()
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
     gedcom.US36_list_recent_deaths()
     gedcom.US37_list_recent_survivors()
@@ -972,6 +1044,7 @@ def main() -> None:
     # Sprint 03
     gedcom.US32_list_multiple_births()
     gedcom.US33_list_orphans()
+    gedcom.US19_married_first_cousins()
     gedcom.US22_uni_ids_indi_fam()
     gedcom.US23_uni_name_birth()
     gedcom.US24_unique_families_by_spouses()

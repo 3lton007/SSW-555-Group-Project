@@ -441,6 +441,76 @@ class main_testing(unittest.TestCase):
         result = GedcomFile.US12_Mother_Father_older(self.gedcom)
         self.assertEqual(set(), result)
 
+    def test_US16(self):
+        
+        # Family1 same name
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set(["@I2@"])
+
+        GedcomFile._individual_dt["@I0@"].name = 'aran /kel/ '
+        GedcomFile._individual_dt["@I1@"].name = 'molly /kel/ '
+        GedcomFile._individual_dt["@I2@"].name = 'jo /kel/ '
+
+        # Family2 differennt name
+        GedcomFile._family_dt["@F_test1"].husband_id = "@I4@"
+        GedcomFile._family_dt["@F_test1"].wife_id =    "@I5@"
+        GedcomFile._family_dt["@F_test1"].children = set(["@I6@"])
+
+        GedcomFile._individual_dt["@I4@"].name = 'yash /smith/ '
+        GedcomFile._individual_dt["@I5@"].name = 'ind /smith/ '
+        GedcomFile._individual_dt["@I6@"].name = 'shree /pal/ '
+
+        result = GedcomFile.US16_male(self.gedcom)
+        self.assertEqual(["@F_test1"], result)
+
+    def test_US19(self):
+
+         # Define the following 3-generation Family:
+        # @F_Test0: Husband:@I0@  Wife: @I1@  children: @I2@.  In this family, Husband is deceased recently.
+        #   @F_Test1: Husband:@I2@  Wife: @I3@  children: @I4@
+        #       @F_Test2: Husband:@I4@  Wife: @I5@  children: @I6@ @I8@ @I10@. In this family, @I10@ is deceased.
+        #
+        # Therefore Descendants of @I0@ are Children (@I2@), grand children (@I4@), and great-grand-children (@I6@, @I8@, @I10@) 
+        #
+        #GrandParents
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set({"@I2@","@I5@"})
+        GedcomFile._individual_dt["@I0@"].fams = set(["@F_test0"])
+        GedcomFile._individual_dt["@I1@"].fams = set(["@F_test0"])
+        
+
+        #Boys Parents
+        GedcomFile._family_dt["@F_test1"].husband_id = "@I2@"
+        GedcomFile._family_dt["@F_test1"].wife_id =    "@I3@"
+        GedcomFile._family_dt["@F_test1"].children = set({"@I10@"})
+        GedcomFile._individual_dt["@I2@"].fams = set(["@F_test1"])
+        GedcomFile._individual_dt["@I3@"].fams = set(["@F_test1"])
+        GedcomFile._individual_dt["@I2@"].famc = set(["@F_test0"])
+
+        #Girls Parents
+        GedcomFile._family_dt["@F_test2"].husband_id = "@I4@"
+        GedcomFile._family_dt["@F_test2"].wife_id =    "@I5@"
+        GedcomFile._family_dt["@F_test2"].children = set({"@I11@"})
+        GedcomFile._individual_dt["@I4@"].fams = set(["@F_test2"])
+        GedcomFile._individual_dt["@I5@"].fams = set(["@F_test2"])
+        GedcomFile._individual_dt["@I5@"].famc = set(["@F_test0"])
+
+        #fam3
+        GedcomFile._family_dt["@F_test5"].husband_id = "@I10@"
+        GedcomFile._family_dt["@F_test5"].wife_id =    "@I11@"
+        GedcomFile._individual_dt["@I10@"].fams = set(["@F_test5"])
+        GedcomFile._individual_dt["@I11@"].fams = set(["@F_test5"])
+        GedcomFile._individual_dt["@I10@"].famc = set(["@F_test1"])
+        GedcomFile._individual_dt["@I11@"].famc = set(["@F_test2"])
+
+        result = GedcomFile.US19_married_first_cousins(self.gedcom)
+        self.assertEqual(["@F_test5"],result)
+
+
+    
+
 
 
 
