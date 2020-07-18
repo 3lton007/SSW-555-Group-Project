@@ -441,6 +441,76 @@ class main_testing(unittest.TestCase):
         result = GedcomFile.US12_Mother_Father_older(self.gedcom)
         self.assertEqual(set(), result)
 
+    def test_US16(self):
+        
+        # Family1 same name
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set(["@I2@"])
+
+        GedcomFile._individual_dt["@I0@"].name = 'aran /kel/ '
+        GedcomFile._individual_dt["@I1@"].name = 'molly /kel/ '
+        GedcomFile._individual_dt["@I2@"].name = 'jo /kel/ '
+
+        # Family2 differennt name
+        GedcomFile._family_dt["@F_test1"].husband_id = "@I4@"
+        GedcomFile._family_dt["@F_test1"].wife_id =    "@I5@"
+        GedcomFile._family_dt["@F_test1"].children = set(["@I6@"])
+
+        GedcomFile._individual_dt["@I4@"].name = 'yash /smith/ '
+        GedcomFile._individual_dt["@I5@"].name = 'ind /smith/ '
+        GedcomFile._individual_dt["@I6@"].name = 'shree /pal/ '
+
+        result = GedcomFile.US16_male(self.gedcom)
+        self.assertEqual(["@F_test1"], result)
+
+    def test_US19(self):
+
+         # Define the following 3-generation Family:
+        # @F_Test0: Husband:@I0@  Wife: @I1@  children: @I2@.  In this family, Husband is deceased recently.
+        #   @F_Test1: Husband:@I2@  Wife: @I3@  children: @I4@
+        #       @F_Test2: Husband:@I4@  Wife: @I5@  children: @I6@ @I8@ @I10@. In this family, @I10@ is deceased.
+        #
+        # Therefore Descendants of @I0@ are Children (@I2@), grand children (@I4@), and great-grand-children (@I6@, @I8@, @I10@) 
+        #
+        #GrandParents
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set({"@I2@","@I5@"})
+        GedcomFile._individual_dt["@I0@"].fams = set(["@F_test0"])
+        GedcomFile._individual_dt["@I1@"].fams = set(["@F_test0"])
+        
+
+        #Boys Parents
+        GedcomFile._family_dt["@F_test1"].husband_id = "@I2@"
+        GedcomFile._family_dt["@F_test1"].wife_id =    "@I3@"
+        GedcomFile._family_dt["@F_test1"].children = set({"@I10@"})
+        GedcomFile._individual_dt["@I2@"].fams = set(["@F_test1"])
+        GedcomFile._individual_dt["@I3@"].fams = set(["@F_test1"])
+        GedcomFile._individual_dt["@I2@"].famc = set(["@F_test0"])
+
+        #Girls Parents
+        GedcomFile._family_dt["@F_test2"].husband_id = "@I4@"
+        GedcomFile._family_dt["@F_test2"].wife_id =    "@I5@"
+        GedcomFile._family_dt["@F_test2"].children = set({"@I11@"})
+        GedcomFile._individual_dt["@I4@"].fams = set(["@F_test2"])
+        GedcomFile._individual_dt["@I5@"].fams = set(["@F_test2"])
+        GedcomFile._individual_dt["@I5@"].famc = set(["@F_test0"])
+
+        #fam3
+        GedcomFile._family_dt["@F_test5"].husband_id = "@I10@"
+        GedcomFile._family_dt["@F_test5"].wife_id =    "@I11@"
+        GedcomFile._individual_dt["@I10@"].fams = set(["@F_test5"])
+        GedcomFile._individual_dt["@I11@"].fams = set(["@F_test5"])
+        GedcomFile._individual_dt["@I10@"].famc = set(["@F_test1"])
+        GedcomFile._individual_dt["@I11@"].famc = set(["@F_test2"])
+
+        result = GedcomFile.US19_married_first_cousins(self.gedcom)
+        self.assertEqual(["@F_test5"],result)
+
+
+    
+
 
 
 
@@ -669,6 +739,97 @@ class main_testing(unittest.TestCase):
         self.assertEqual(expected_pt.get_string(), actual_pt.get_string())
 
 
+    def test_US22_uni_ids_indi_fam(self):
+        # For this test we are not depending on the dictionaries created as part of the test setup, since we're
+        # partially testing the parser. So, clear the containers.
+        self.gedcom._individual_dt.clear()
+        self.gedcom._family_dt.clear()
+        self.gedcom._individuals_living_and_married.clear()
+        self.gedcom._individuals_living_over_thirty_and_never_married.clear()
+        self.gedcom._validated_list.clear()
+
+        # Create two different families with unique individuals, but with the same exact Family ID ('@EA1@')
+                                     #Level,  Tag,    Argument
+        
+        # Family 1:
+        self.gedcom._validated_list.append([0, 'INDI',  '@E0@'          ])
+        self.gedcom._validated_list.append([1, 'NAME',  'Radi /Alofi/'  ])
+        self.gedcom._validated_list.append([1, 'SEX',   'F'             ])
+        self.gedcom._validated_list.append([1, 'BIRT',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '10 MAR 2000'   ])
+        self.gedcom._validated_list.append([1, 'FAMS',  '@EA1@'         ])
+
+        self.gedcom._validated_list.append([0, 'INDI',  '@E1@'          ])
+        self.gedcom._validated_list.append([1, 'NAME',  'Roaa /Alofi/'  ])
+        self.gedcom._validated_list.append([1, 'SEX',   'F'             ])
+        self.gedcom._validated_list.append([1, 'BIRT',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '10 MAR 2000'   ])
+        self.gedcom._validated_list.append([1, 'FAMS',  '@EA1@'         ])
+
+        self.gedcom._validated_list.append([0, 'FAM',   '@EA1@'         ])
+        self.gedcom._validated_list.append([1, 'HUSB',  '@E0@'          ])
+        self.gedcom._validated_list.append([1, 'WIFE',  '@E1@'          ])
+        self.gedcom._validated_list.append([1, 'MARR',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '1 APR 2020'    ])
+
+        # Family 2: The Duplicate Family
+        self.gedcom._validated_list.append([0, 'INDI',  '@E2@'          ])
+        self.gedcom._validated_list.append([1, 'NAME',  'Radi /Alofi/'  ])
+        self.gedcom._validated_list.append([1, 'SEX',   'F'             ])
+        self.gedcom._validated_list.append([1, 'BIRT',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '10 MAR 2000'   ])
+        self.gedcom._validated_list.append([1, 'FAMS',  '@EA1@'         ])
+
+        self.gedcom._validated_list.append([0, 'INDI', '@E3@'           ])
+        self.gedcom._validated_list.append([1, 'NAME', 'Roaa /Alofi/'   ])
+        self.gedcom._validated_list.append([1, 'SEX',  'F'              ])
+        self.gedcom._validated_list.append([1, 'BIRT', ''               ])
+        self.gedcom._validated_list.append([2, 'DATE', '10 MAR 2000'    ])
+        self.gedcom._validated_list.append([1, 'FAMS', '@EA1@'          ])
+
+        self.gedcom._validated_list.append([0, 'FAM',  '@EA1@'          ])
+        self.gedcom._validated_list.append([1, 'HUSB', '@E2@'           ])
+        self.gedcom._validated_list.append([1, 'WIFE', '@E3@'           ])
+        self.gedcom._validated_list.append([1, 'MARR', ''               ])
+        self.gedcom._validated_list.append([2, 'DATE', '1 APR 2019'     ])
+
+        # Add a duplicate individual with the exact same ID
+        self.gedcom._validated_list.append([0, 'INDI',  '@E2@'          ])
+        self.gedcom._validated_list.append([1, 'NAME',  'Jess /Soares/' ])
+        self.gedcom._validated_list.append([1, 'SEX',   'F'             ])
+        self.gedcom._validated_list.append([1, 'BIRT',  ''              ])
+        self.gedcom._validated_list.append([2, 'DATE',  '1 JAN 2004'    ])
+
+
+        # Kick off the parser to create the individuals and families, and to detect the duplicates.
+        self.gedcom.parse_validated_gedcom()
+
+        # Expect the Duplicate family
+        expect = ["ERROR: US22: Family ID: @EA1@ with wife ID: @E3@ and husband ID: @E2@ "+\
+                "is a duplicate of Family ID: @EA1@ with wife ID: @E1@ and husband id: @E0@"]
+ 
+        # Expect the duplicate individual
+        expect.append(f"ERROR: US22: Individual ID: @E2@ with name Jess /Soares/ is a duplicate of individual ID @E2@ "+\
+                     f"with name Radi /Alofi/")
+
+        # Call method under test
+        result = GedcomFile.US22_uni_ids_indi_fam(self.gedcom)
+
+        self.assertEqual(expect, result)
+        
+
+
+
+    def test_US23_uni_name_birth(self):
+        # Rise an error if the both individuals have same name and birthdates 
+        GedcomFile._individual_dt["@I5@"].name = "Safa /Alofi/"
+        GedcomFile._individual_dt["@I5@"].birth =  datetime.date(1990,5,16)
+        GedcomFile._individual_dt["@I6@"].name = "Safa /Alofi/"
+        GedcomFile._individual_dt["@I6@"].birth =  datetime.date(1990,5,16)
+        result = GedcomFile.US23_uni_name_birth(self.gedcom)
+        expect = ["ERROR US23 Individuals ids @I5@ and name Safa /Alofi/ found duplicated name and birthdate", "ERROR US23 Individuals ids @I6@ and name Safa /Alofi/ found duplicated name and birthdate"] 
+        self.assertEqual(expect, result)
+
 
 
     def test_US02_birth_before_marriage(self):
@@ -808,6 +969,186 @@ class main_testing(unittest.TestCase):
 
         result: List[str] = [person1.age, person2.age, person3.age, person4.age]
         expected: List[str] = [29, 95, 0, 20]
+
+        self.assertEqual(result, expected)
+
+
+
+
+    def test_US32_Multiple_Births(self) -> None:
+        # Define 1st family with 5 children. 3 are multiple birth, 2 are not.
+        GedcomFile._family_dt["@F_test0"].children = set(["@I3@", "@I4@", "@I6@", "@I8@", "@I10@"])
+
+        # These 3 are born one day apart (part of same multiple birth)
+        GedcomFile._individual_dt["@I3@"].birth = datetime.date(1980, 1, 1)
+        GedcomFile._individual_dt["@I4@"].birth = datetime.date(1979, 12, 31)
+        GedcomFile._individual_dt["@I6@"].birth = datetime.date(1980, 1, 1)
+
+        # These 2 are not part of multiple birth
+        GedcomFile._individual_dt["@I8@"].birth = datetime.date(1985, 1, 1)
+        GedcomFile._individual_dt["@I10@"].birth = datetime.date(1986, 1, 1)
+
+        # Make sure each child is actually part of the test family.
+        for child in GedcomFile._family_dt["@F_test0"].children:
+            GedcomFile._individual_dt[child].living = True
+            GedcomFile._individual_dt[child].setAge()
+            GedcomFile._individual_dt[child].famc = set(["@F_test0"])    
+
+
+        # Define 2nd family with 3 children. 2 are multiple birth, 1 is not.
+        GedcomFile._family_dt["@F_test1"].children = set(["@I2@", "@I5@", "@I7@"])
+
+        # These 2 are born one day apart (part of same multiple birth)
+        GedcomFile._individual_dt["@I2@"].birth = datetime.date(1980, 1, 1)
+        GedcomFile._individual_dt["@I5@"].birth = datetime.date(1980, 1, 2)
+
+        # This one is not
+        GedcomFile._individual_dt["@I7@"].birth = datetime.date(1985, 1, 1)
+
+        # Make sure each child is actually part of the test family.
+        for child in GedcomFile._family_dt["@F_test1"].children:
+            GedcomFile._individual_dt[child].living = True
+            GedcomFile._individual_dt[child].setAge()
+            GedcomFile._individual_dt[child].famc = set(["@F_test1"]) 
+
+
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID', 'Child ID', 'Child Name', 'Child Birth Date'])
+        expected_pt.add_row([set(["@F_test0"]), "@I3@", GedcomFile._individual_dt["@I3@"].name, GedcomFile._individual_dt["@I3@"].birth])
+        expected_pt.add_row([set(["@F_test0"]), "@I4@", GedcomFile._individual_dt["@I4@"].name, GedcomFile._individual_dt["@I4@"].birth])
+        expected_pt.add_row([set(["@F_test0"]), "@I6@", GedcomFile._individual_dt["@I6@"].name, GedcomFile._individual_dt["@I6@"].birth])
+        expected_pt.add_row([set(["@F_test1"]), "@I2@", GedcomFile._individual_dt["@I2@"].name, GedcomFile._individual_dt["@I2@"].birth])
+        expected_pt.add_row([set(["@F_test1"]), "@I5@", GedcomFile._individual_dt["@I5@"].name, GedcomFile._individual_dt["@I5@"].birth])
+
+
+        actual = self.gedcom.US32_list_multiple_births()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+
+
+
+    def test_US33_Orphans(self) -> None:
+        # Define family with 3 children. Both parents are deceased
+        GedcomFile._family_dt["@F_test0"].children = set(["@I2@", "@I5@", "@I7@"])
+        GedcomFile._individual_dt["@I2@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*18))
+        GedcomFile._individual_dt["@I5@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*17))
+        GedcomFile._individual_dt["@I7@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*19))
+
+        # Make sure each child is actually part of the test family.
+        for child in GedcomFile._family_dt["@F_test0"].children:
+            GedcomFile._individual_dt[child].setAge()
+            GedcomFile._individual_dt[child].famc = set(["@F_test0"]) 
+
+        father = GedcomFile._family_dt["@F_test0"].husband_id
+        mother = GedcomFile._family_dt["@F_test0"].wife_id
+
+
+
+        #####Test 1: Both parents deceased
+        GedcomFile._individual_dt[father].living = False
+        GedcomFile._individual_dt[mother].living = False
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        expected_pt.add_row([set(["@F_test0"]), "@I5@", GedcomFile._individual_dt["@I5@"].name])
+
+        actual = self.gedcom.US33_list_orphans()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+
+
+         #####Test 2: Father is alive, mother is deceased
+        GedcomFile._individual_dt[father].living = True
+        GedcomFile._individual_dt[mother].living = False
+
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        # We don't expect any entries in the table
+
+        actual = self.gedcom.US33_list_orphans()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+
+
+         #####Test 3: Father is deceased, mother is alive
+        GedcomFile._individual_dt[father].living = False
+        GedcomFile._individual_dt[mother].living = True
+
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        # We don't expect any entries in the table
+        
+        actual = self.gedcom.US33_list_orphans()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+
+
+         #####Test 4: both parents deceased, more than one sibling is younger than 18
+        GedcomFile._individual_dt[father].living = False
+        GedcomFile._individual_dt[mother].living = False
+        GedcomFile._individual_dt["@I2@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*17))
+        GedcomFile._individual_dt["@I5@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*16))
+        GedcomFile._individual_dt["@I7@"].birth = datetime.datetime.date(self.today - datetime.timedelta(days=365*18))
+
+        # Make sure each child is actually part of the test family.
+        for child in GedcomFile._family_dt["@F_test0"].children:
+            GedcomFile._individual_dt[child].setAge()
+            GedcomFile._individual_dt[child].famc = set(["@F_test0"]) 
+
+        expected_pt: PrettyTable = PrettyTable(field_names = ['Family ID (as child)', 'Individual ID', 'Name']) 
+        expected_pt.add_row([set(["@F_test0"]), "@I5@", GedcomFile._individual_dt["@I5@"].name])
+        expected_pt.add_row([set(["@F_test0"]), "@I2@", GedcomFile._individual_dt["@I2@"].name])
+        expected_pt.sortby = 'Individual ID'
+        actual = self.gedcom.US33_list_orphans()
+        self.assertEqual(expected_pt.get_string(), actual.get_string())
+
+    def test_US24_unique_families_by_spouses(self) -> None:
+        '''tests that the method implemented for US24 highlight the case where more than one family has the same spouses and marriage date'''
+
+        #Making @F_test1 and @F_test2 the same as @F_test0:
+        GedcomFile._family_dt['@F_test1'].husband_name = 'Test Subject0'
+        GedcomFile._family_dt['@F_test1'].wife_name = 'Test Subject1'
+        GedcomFile._family_dt['@F_test1'].marriage_date = datetime.date(1930,1,1)
+
+        GedcomFile._family_dt['@F_test2'].husband_name = 'Test Subject0'
+        GedcomFile._family_dt['@F_test2'].wife_name = 'Test Subject1'
+        GedcomFile._family_dt['@F_test2'].marriage_date = datetime.date(1930,1,1)
+
+        #Making @F_test4 the same as @F_test3:
+        GedcomFile._family_dt['@F_test4'].husband_name = 'Test Subject6'
+        GedcomFile._family_dt['@F_test4'].wife_name = 'Test Subject7'
+        GedcomFile._family_dt['@F_test4'].marriage_date = datetime.date(1960,4,4)
+        
+        result: List[str] = GedcomFile.US24_unique_families_by_spouses(self.gedcom)
+
+        expected: List[str] = [
+                f'ANOMALY: US24: Families @F_test0, @F_test1, @F_test2, have the same spouses and marriage date: Husband: Test Subject0, Wife: Test Subject1, Marriage Date: 1930-01-01',
+                f'ANOMALY: US24: Families @F_test3, @F_test4, have the same spouses and marriage date: Husband: Test Subject6, Wife: Test Subject7, Marriage Date: 1960-04-04',
+                
+                ]
+
+        self.assertEqual(result, expected)
+
+    def test_US25_unique_first_names_in_families(self) -> None:
+        '''tests that the method implemented for US25 highlights the case where more than one child has the same name and birth date in the same family'''
+
+        #Setting individuals "@I1@" and "@I2@" to have same name and birth date as inividual "@I0@", and putting them all as children in family "@F_test0"
+        GedcomFile._individual_dt['@I1@'].name = 'Test Subject0'
+        GedcomFile._individual_dt['@I1@'].birth = datetime.date(1900,12,12)
+        GedcomFile._individual_dt['@I2@'].name = 'Test Subject0'
+        GedcomFile._individual_dt['@I2@'].birth = datetime.date(1900,12,12)
+        GedcomFile._family_dt['@F_test0'].children = ({'@I0@', '@I1@', '@I2@'})
+
+        #Setting individual "@I6@" to have same name and birth date as individual "@I5@", and putting them all as children in family "@F_test3"
+        GedcomFile._individual_dt['@I6@'].name = 'Test Subject5'
+        GedcomFile._individual_dt['@I6@'].birth = datetime.date(1920,7,7)
+        GedcomFile._family_dt['@F_test3'].children = ({'@I5@', '@I6@'})
+
+        result: List[str] = GedcomFile.US25_unique_first_names_in_families(self.gedcom)
+
+        child_ids_for_fam0: Set[str] = ', '.join(GedcomFile._family_dt['@F_test0'].children)
+        child_ids_for_fam3: Set[str] = ', '.join(GedcomFile._family_dt['@F_test3'].children)
+        
+        expected: List[str] = [
+                f'ANOMALY: US25: Individuals {child_ids_for_fam0} from family @F_test0, have the same name and birth date: Name: Test Subject0, Birth Date: 1900-12-12',
+                f'ANOMALY: US25: Individuals {child_ids_for_fam3} from family @F_test3, have the same name and birth date: Name: Test Subject5, Birth Date: 1920-07-07',
+
+        ]
 
         self.assertEqual(result, expected)
 
