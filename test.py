@@ -498,15 +498,15 @@ class main_testing(unittest.TestCase):
         GedcomFile._individual_dt["@I5@"].famc = set(["@F_test0"])
 
         #fam3
-        GedcomFile._family_dt["@F_test3"].husband_id = "@I10@"
-        GedcomFile._family_dt["@F_test3"].wife_id =    "@I11@"
-        GedcomFile._individual_dt["@I10@"].fams = set(["@F_test3"])
-        GedcomFile._individual_dt["@I11@"].fams = set(["@F_test3"])
+        GedcomFile._family_dt["@F_test5"].husband_id = "@I10@"
+        GedcomFile._family_dt["@F_test5"].wife_id =    "@I11@"
+        GedcomFile._individual_dt["@I10@"].fams = set(["@F_test5"])
+        GedcomFile._individual_dt["@I11@"].fams = set(["@F_test5"])
         GedcomFile._individual_dt["@I10@"].famc = set(["@F_test1"])
         GedcomFile._individual_dt["@I11@"].famc = set(["@F_test2"])
 
-        result = GedcomFile.US19_cousins(self.gedcom)
-        self.assertEqual(["@F_test3"],result)
+        result = GedcomFile.US19_married_first_cousins(self.gedcom)
+        self.assertEqual(["@F_test5"],result)
 
 
     

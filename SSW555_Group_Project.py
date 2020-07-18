@@ -417,80 +417,48 @@ class GedcomFile:
                         print(output)
                         r.append(x.id)
         return r
-    
-    def US19_cousins(self):
-        ''' First cousins cannot marry each other'''
 
-        r = []
+    def families(self, family_set):
+        '''yields a family object for a given set of family ids'''
+        for family in family_set:
+            yield self._family_dt[family]
 
-        for k, v in self._family_dt.items():
-            hubby = v.husband_id
-            wife = v.wife_id
+    def find_grandparents(self, indi_id):
+        '''Finds all grandparents for a given individual'''
+        r = list()
+        indi = self._individual_dt[indi_id]
 
-            hubby_d = 'a'
-            hubby_m = 'b'
-            wife_d = 'c'
-            wife_m = 'd'
-            hubby_mgm = 'e'
-            hubby_mgp = 'f'
-            wife_mgp = 'g'
-            wife_mgm = 'h'
-            hubby_pgm = 'i'
-            hubby_pgp = 'j'
-            wife_pgp = 'k'
-            wife_pgm = 'l'
+        # Run through all the families where this individual is a child. Normally expected only 1 family.
+        for parent_fam in self.families(indi.famc):
 
-            for k, v in self._family_dt.items():
-                for x in v.children:
-                    if x == hubby:
-                        hubby_d = v.husband_id
-                        hubby_m = v.wife_id
+            # Find the grandparents on the father's side.
+            for grandparent_fam in self.families(self._individual_dt[parent_fam.husband_id].famc):
+                r.append(grandparent_fam.husband_id)
+                r.append(grandparent_fam.wife_id)
 
-                        for k, v in self._family_dt.items():
-                            for y in v.children:
-                                if y == hubby_d:
-                                    hubby_pgp = v.husband_id
-                                    hubby_pgm = v.wife_id
-                                    break
+            # Find the grandparents on the mother's side
+            for grandparent_fam in self.families(self._individual_dt[parent_fam.wife_id].famc):
+                r.append(grandparent_fam.husband_id)
+                r.append(grandparent_fam.wife_id)
+                
+        return r
 
-                        for k, v in self._family_dt.items():
-                            for z in v.children:
-                                if z == hubby_m:
-                                    hubby_mgp = v.husband_id
-                                    hubby_mgm = v.wife_id
-                                    break
-
-            for k, v in self._family_dt.items():
-                for a in v.children:
-                    if a == wife:
-                        wife_d = v.husband_id
-                        wife_m = v.wife_id
-
-                        for k, v in self._family_dt.items():
-                            for b in v.children:
-                                if b == wife_d:
-                                    wife_pgp = v.husband_id
-                                    wife_pgm = v.wife_id
-                                    break
-
-                        for k, v in self._family_dt.items():
-                            for c in v.children:
-                                if z == wife_m:
-                                    wife_mgp = v.husband_id
-                                    wife_mgm = v.wife_id
-                                    break 
-
-        if (hubby_pgm == wife_pgm or hubby_mgm == wife_pgm or hubby_mgm == wife_mgm):
-            print(f"ERROR: US19: Family id:{k} Husband name:{v.husband_name}, husband id:{v.husband_id} and wife name:{v.wife_name},wife id:{v.wife_id} are first cousins")
-            r.append(k)
-        return r  
-                                    
-
-                    
-
-
-
-
+    def US19_married_first_cousins(self):
+        r = list()
+        for fam in self._family_dt.values():
+            grandparents =  self.find_grandparents(fam.husband_id)
+            grandparents += self.find_grandparents(fam.wife_id)
+            
+            # OK, now we have a list of grandparents from both spouses.
+            # IF any grandparents are repeated in this list, then the spouses share a 
+            # grandparent - and therefore are first cousins.
+            if len(grandparents) == len(set(grandparents)):
+                continue
+            else:
+                print(f"ANOMALY: US19: Family id: {fam.id} Husband name: {fam.husband_name}, husband id: {fam.husband_id} and wife name: {fam.wife_name}, wife id: {fam.wife_id} are first cousins")
+                r.append(fam.id)
+        return(r)
+ 
 
                         
     def US2_birth_before_marriage(self):
@@ -909,7 +877,6 @@ def main() -> None:
     gedcom.US07_Death150()
     gedcom.US12_Mother_Father_older()
     gedcom.US16_male()
-    gedcom.US19_cousins()
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
     gedcom.US36_list_recent_deaths()
     gedcom.US37_list_recent_survivors()
@@ -918,8 +885,7 @@ def main() -> None:
     # Sprint 03
     gedcom.US32_list_multiple_births()
     gedcom.US33_list_orphans()
-    
-
+    gedcom.US19_married_first_cousins()
 
 if __name__ == '__main__':
     main()
