@@ -466,13 +466,6 @@ class main_testing(unittest.TestCase):
 
     def test_US19(self):
 
-         # Define the following 3-generation Family:
-        # @F_Test0: Husband:@I0@  Wife: @I1@  children: @I2@.  In this family, Husband is deceased recently.
-        #   @F_Test1: Husband:@I2@  Wife: @I3@  children: @I4@
-        #       @F_Test2: Husband:@I4@  Wife: @I5@  children: @I6@ @I8@ @I10@. In this family, @I10@ is deceased.
-        #
-        # Therefore Descendants of @I0@ are Children (@I2@), grand children (@I4@), and great-grand-children (@I6@, @I8@, @I10@) 
-        #
         #GrandParents
         GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
         GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
