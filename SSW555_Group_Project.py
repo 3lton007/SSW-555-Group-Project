@@ -1,4 +1,4 @@
-from typing import Iterator, Tuple, IO, List, Dict, Set
+from typing import Iterator, Tuple, IO, List, Dict, Set, DefaultDict
 from collections import defaultdict
 import datetime
 import os
@@ -165,6 +165,8 @@ class GedcomFile:
     _family_dt: Dict[str, Family] = dict()
     _individuals_living_and_married: Dict[str, str] = dict()
     _individuals_living_over_thirty_and_never_married: Dict[str, str] = dict()
+    _list_of_duplicate_individual_ids: List[Individual] = list()
+    _list_of_duplicate_family_ids: List[Family] = list()
 
     def __init__(self) -> None:
         '''Sets containers to store the input and output lines'''
@@ -253,7 +255,11 @@ class GedcomFile:
                 # Since this is the start - Create the Individual!
                 individual: Individual = Individual()
                 individual_id: str = argument
-                self._individual_dt[individual_id] = individual
+
+                if individual_id in self._individual_dt:
+                    self._list_of_duplicate_individual_ids.append(individual)
+                else:
+                    self._individual_dt[individual_id] = individual
                 
             elif tag == "FAM":
                 # Subsequent records will define a family
@@ -263,7 +269,11 @@ class GedcomFile:
                 # Since this is the start - Create the Family!
                 family: Family = Family()
                 family_id: str = argument
-                self._family_dt[family_id] = family
+
+                if family_id in self._family_dt:
+                    self._list_of_duplicate_family_ids.append(family)
+                else:
+                    self._family_dt[family_id] = family
                 
             elif tag == "TRLR" or tag == "HEAD" or tag == "NOTE":
                  # this is neither a family or an individual.
@@ -284,6 +294,7 @@ class GedcomFile:
         for individual in self._individual_dt.values():
             individuals_pretty_table.add_row(individual.return_pretty_table_row())
         
+        individuals_pretty_table.sortby = 'ID'
         print("People")
         print(individuals_pretty_table)
         print("\n")
@@ -502,7 +513,45 @@ class GedcomFile:
                              print(output)
                              r.append(output2)
         return r
+    
+    def US22_uni_ids_indi_fam(self):
+        '''All individual IDs should be unique and all family IDs should be unique '''
 
+        output = list()
+        for dup_family in self._list_of_duplicate_family_ids:
+            output.append(f"ERROR: US22: Family ID: {dup_family.id} with wife ID: {dup_family.wife_id} and husband ID: {dup_family.husband_id} "+\
+                     f"is a duplicate of Family ID: {dup_family.id} with wife ID: {self._family_dt[dup_family.id].wife_id} and husband id: {self._family_dt[dup_family.id].husband_id}")
+
+        for dup_ind in self._list_of_duplicate_individual_ids:
+            output.append(f"ERROR: US22: Individual ID: {dup_ind.id} with name {dup_ind.name} is a duplicate of individual ID {dup_ind.id} "+\
+                     f"with name {self._individual_dt[dup_ind.id].name}")
+
+        for entry in output:
+            print(entry)
+        return output
+
+    
+    def US23_uni_name_birth(self):
+        ''' No more than one individual with the same name and birth date should appear in a GEDCOM file'''
+        r = list()
+
+        for inid, vals in self._individual_dt.items():
+            dup_names = list()
+            dup_birthdates = list()
+
+            for ids in self._individual_dt.keys():
+                if self._individual_dt[ids].name == vals.name:
+                    dup_names.append(ids)
+            if len (dup_names) > 1:
+                for idis in dup_names:
+                    if self._individual_dt[idis].birth == vals.birth:
+                        dup_birthdates.append(idis)
+                if len(dup_birthdates) > 1:
+                    output = f"ERROR US23 Individuals ids {inid} and name {vals.name} found duplicated name and birthdate"
+                    print(output)
+                    r.append(output)
+        return r
+    
 
     def US4_Marriage_before_divorce(self): 
         '''Marriage should occur before divorce of spouses, and divorce can only occur after marriage'''
@@ -843,6 +892,116 @@ class GedcomFile:
         return orphan_pt
 
 
+    def US24_unique_families_by_spouses(self) -> List[str]:
+        '''Identifies multiple families that have the same spouses and marriage date'''
+
+        list_of_families: List[Family] = self.US24_set_list_of_families()
+        output: List[str] = list()
+
+        while True:
+            if len(list_of_families) == 0: break
+            family_ids_with_matching_spouses_and_marriage_date = list()
+            
+            family_being_compared: Family = list_of_families.pop(0)
+            detail_for_family_being_compared = [family_being_compared.husband_name, family_being_compared.wife_name, family_being_compared.marriage_date]
+            family_ids_with_matching_spouses_and_marriage_date.append(family_being_compared.id)
+
+            for fam in list_of_families:
+                if [fam.husband_name, fam.wife_name, fam.marriage_date] == detail_for_family_being_compared:
+                    family_ids_with_matching_spouses_and_marriage_date.append(fam.id)
+
+            if len(family_ids_with_matching_spouses_and_marriage_date) > 1:
+                anomaly_message: str = self.US24_set_output_message(family_ids_with_matching_spouses_and_marriage_date, detail_for_family_being_compared)
+                print(anomaly_message)
+                output.append(anomaly_message)
+
+            for family in list_of_families:
+                if family.id in family_ids_with_matching_spouses_and_marriage_date:
+                    list_of_families.remove(family)
+
+        return output
+
+    def US24_set_list_of_families(self) -> List[Family]:
+        '''Traverses through the _family_dt to extract only the families that have husband name, wife name, and marriage date all poulated, and puts them in a list'''
+        
+        list_of_families: List[Family] = list()
+
+        for family in self._family_dt.values():
+            if family.husband_id == 'TBD' or family.wife_id == 'TBD' or family.marriage_date == 'NA':
+                continue
+            else:
+                list_of_families.append(family)
+
+        return list_of_families
+
+    def US24_set_output_message(self, list_of_family_ids: List[str], family_detail: List[str]) -> str:
+        '''Sets up the output message for US24'''
+
+        family_ids: str = ', '.join(list_of_family_ids)
+        husband: str = family_detail[0]
+        wife: str = family_detail[1]
+        marriage_date: str = family_detail[2]
+
+        return f'ANOMALY: US24: Families {family_ids}, have the same spouses and marriage date: Husband: {husband}, Wife: {wife}, Marriage Date: {marriage_date}'
+
+    def US25_unique_first_names_in_families(self) -> None:
+        '''Traverses through the _family_dt and checks each family's children to see if multiple children have the same name and birth date'''
+        
+        output: List[str] = list()
+
+        for family_id, children in self.US25_set_list_of_children_in_a_family():
+            family_id: str = family_id
+            list_of_children_in_family: List[Individual] = children
+        
+            while True:
+                if len(list_of_children_in_family) == 0: break
+                child_ids_with_matching_name_and_birth_date: List[str] = list()
+
+                child_being_compared: Individual = list_of_children_in_family.pop(0)
+                detail_for_child_being_compared: List[str] = [child_being_compared.name, child_being_compared.birth]
+                child_ids_with_matching_name_and_birth_date.append(child_being_compared.id)
+
+                for child in list_of_children_in_family:
+                        if [child.name, child.birth] == detail_for_child_being_compared:
+                            child_ids_with_matching_name_and_birth_date.append(child.id)
+                
+                if len(child_ids_with_matching_name_and_birth_date) > 1:
+                    anomaly_message: str = self.US25_set_output_message(child_ids_with_matching_name_and_birth_date, detail_for_child_being_compared, family_id)
+                    print(anomaly_message)
+                    output.append(anomaly_message)
+                            
+                for child in list_of_children_in_family:
+                    if child.id in child_ids_with_matching_name_and_birth_date:
+                        list_of_children_in_family.remove(child)
+
+        return output
+
+    def US25_set_list_of_children_in_a_family(self) -> Iterator[List[Individual]]:
+        '''Traverses through the _family_dt to extract only the families that have multiple children'''
+
+        children_in_family: List[Individual] = list()
+
+        for family in self._family_dt.values():
+            if len(family.children) <= 1:
+                continue
+            else:
+                for child_id in family.children:
+                    children_in_family.append(self._individual_dt[child_id])
+                
+                yield family.id, children_in_family
+                children_in_family = list()
+
+    def US25_set_output_message(self, list_of_child_ids: List[str], child_detail: List[str], family_id: str):
+        '''Sets up the output message for US24'''
+
+        child_ids: str = ', '.join(list_of_child_ids)
+        family_id: str = family_id
+        name: str = child_detail[0]
+        birth_date: str = child_detail[1]
+
+        return f'ANOMALY: US25: Individuals {child_ids} from family {family_id}, have the same name and birth date: Name: {name}, Birth Date: {birth_date}'
+
+
 def main() -> None:
     '''Runs main program'''
 
@@ -886,6 +1045,11 @@ def main() -> None:
     gedcom.US32_list_multiple_births()
     gedcom.US33_list_orphans()
     gedcom.US19_married_first_cousins()
+    gedcom.US22_uni_ids_indi_fam()
+    gedcom.US23_uni_name_birth()
+    gedcom.US24_unique_families_by_spouses()
+    gedcom.US25_unique_first_names_in_families()
+
 
 if __name__ == '__main__':
     main()
