@@ -480,7 +480,7 @@ class GedcomFile:
                                     wife_mgm = v.wife_id
                                     break 
 
-        if (hubby_pgm == wife_pgm or hubby_mgm == wife_pgm or hubby_mgm == wife_mgm):
+        if (hubby_pgm == wife_pgm or hubby_mgm == wife_pgm or hubby_mgm == wife_mgm or hubby_pgm == wife_mgm):
             print(f"ERROR: US19: Family id:{k} Husband name:{v.husband_name}, husband id:{v.husband_id} and wife name:{v.wife_name},wife id:{v.wife_id} are first cousins")
             r.append(k)
         return r  
