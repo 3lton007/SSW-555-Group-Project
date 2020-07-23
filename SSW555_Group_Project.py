@@ -1002,6 +1002,46 @@ class GedcomFile:
         return f'ANOMALY: US25: Individuals {child_ids} from family {family_id}, have the same name and birth date: Name: {name}, Birth Date: {birth_date}'
 
 
+    def list_upcoming_birthdays(self):
+        '''Finds all living people in a GEDCOM file whose birthdays occur in the next 30 days '''
+        result = list()
+        for person in self._individual_dt.values():
+            if type(person.birth) != datetime.date:
+                # Invalid entry. Birth date never logged, so skip this individual.
+                continue
+            if not person.living:
+                # Deceased, skip this person
+                continue
+            today = datetime.date.today()
+            new_birth = datetime.date(today.year, person.birth.month, person.birth.day)
+            day_delta = (new_birth - today).days # difference results in datetime.timedelta 
+
+            if day_delta < 0:
+                # Well, birthday has already passed this year... 
+                continue
+            elif day_delta <= 30:
+                result.append([person.id, person.name, person.birth, day_delta])
+        return result
+
+    def US38_print_upcoming_birthdays(self) -> None:
+        '''Lists all living people in a GEDCOM file whose birthdays occur in the next 30 days '''
+        upcoming_bday_lst = self.list_upcoming_birthdays()
+
+        pt_upcoming_bdays: PrettyTable = PrettyTable(field_names=['ID', 'Name', "Birth Date", "Days Until"])
+
+        for id, name, birthdate, delta in upcoming_bday_lst:
+            pt_upcoming_bdays.add_row([id, name, birthdate, delta])
+
+        pt_upcoming_bdays.sortby = "Days Until"
+        pt_upcoming_bdays.reversesort = False
+
+        if len(upcoming_bday_lst) > 0:
+            print(f'\nUS38: Upcoming Birthdays:\n{pt_upcoming_bdays}\n')
+        return pt_upcoming_bdays
+
+
+
+
 def main() -> None:
     '''Runs main program'''
 
@@ -1049,6 +1089,13 @@ def main() -> None:
     gedcom.US23_uni_name_birth()
     gedcom.US24_unique_families_by_spouses()
     gedcom.US25_unique_first_names_in_families()
+
+
+
+    # Sprint 04
+    gedcom.US38_print_upcoming_birthdays()
+
+
 
 
 if __name__ == '__main__':
