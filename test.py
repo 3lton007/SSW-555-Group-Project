@@ -1208,5 +1208,70 @@ class main_testing(unittest.TestCase):
 
 
 
+
+
+    def test_US39_upcoming_anniversaries(self):
+
+        # Default families and individuals
+        for family in self.gedcom._family_dt.values():
+            family.marriage_date = "NA"
+            family.divorce_date = "NA"
+            self.gedcom._individual_dt[family.husband_id].living = True
+            self.gedcom._individual_dt[family.husband_id].death_date = "NA"
+            self.gedcom._individual_dt[family.wife_id].living = True
+            self.gedcom._individual_dt[family.wife_id].death_date = "NA"
+
+        expected_family_list = list()
+
+        # 30 Days Ahead - Expected in the output
+        family = GedcomFile._family_dt["@F_test0"]
+        family.marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=30))
+        expected_family_list.append([family.id, 30])
+
+        # 30 Days Ahead, but divorced - Not expected in the output
+        family = GedcomFile._family_dt["@F_test1"]
+        family.marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=30))
+        family.divorce_date =  datetime.datetime.date(self.today + datetime.timedelta(days=365))
+
+        # 1 Day already past - not Expected in the output
+        family = GedcomFile._family_dt["@F_test2"]
+        family.marriage_date = datetime.datetime.date(self.today - datetime.timedelta(days=1))
+
+        # Anniversary Tomorrow! - Expected in the output
+        family = GedcomFile._family_dt["@F_test3"]
+        family.marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=1))
+        expected_family_list.append([family.id, 1])
+
+        # Anniversary Today, but spouse is deceased. Not Expected in the output
+        family = GedcomFile._family_dt["@F_test4"]
+        family.marriage_date =  datetime.date(self.today.year, self.today.month, self.today.day)
+        self.gedcom._individual_dt[family.wife_id].living = False
+
+        # 31 Days ahead - Not expected in the output
+        family = GedcomFile._family_dt["@F_test5"]
+        family.marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=31))
+
+        # Invoke method under test, determine result.
+        actual = self.gedcom.list_upcoming_anniversaries()
+        self.assertEqual(expected_family_list, actual)
+
+        # Test whether the pretty table prints out correctly.
+        test_pt_upcoming_adays: PrettyTable = PrettyTable(field_names=['Family ID', 'Husband Name', 'Husband ID', "Wife Name", "Wife ID", "Marriage Date", "Days Until"])
+
+        for id, days_till in expected_family_list:
+            f = self.gedcom._family_dt[id]
+            test_pt_upcoming_adays.add_row([id, f.husband_name, f.husband_id, f.wife_name, f.wife_id, f.marriage_date, days_till])
+
+        test_pt_upcoming_adays.sortby = "Days Until"
+        test_pt_upcoming_adays.reversesort = False
+
+        actual_pt = self.gedcom.US39_print_upcoming_anniversaries()
+        self.assertEqual(test_pt_upcoming_adays.get_string(), actual_pt.get_string())
+
+
+
+
+
+
 if __name__ == '__main__':
     unittest.main()

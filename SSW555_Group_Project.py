@@ -1042,6 +1042,56 @@ class GedcomFile:
 
 
 
+    def list_upcoming_anniversaries(self):
+        '''
+        Finds all living couples in a GEDCOM file whose marriage anniversaries occur in the next 30 days.
+        Divorced couples are not included.
+        '''
+        result = list()
+        for family in self._family_dt.values():
+            if type(family.marriage_date) != datetime.date:
+                # Invalid entry. marriage date never logged, so skip this individual.
+                continue
+            if not self._individual_dt[family.husband_id].living or not self._individual_dt[family.wife_id].living:
+                # One of the spouses are deceased, skip this family
+                continue
+
+            if family.divorce_date != 'NA':
+                # Divorced couple, so skip this family
+                continue
+
+            today = datetime.date.today()
+            new_marriage_date = datetime.date(today.year, family.marriage_date.month, family.marriage_date.day)
+            day_delta = (new_marriage_date - today).days # difference results in datetime.timedelta 
+
+            if day_delta < 0:
+                # Well, anniversary has already passed this year... 
+                continue
+            elif day_delta <= 30:
+                result.append([family.id, day_delta])
+        return result
+
+    def US39_print_upcoming_anniversaries(self) -> None:
+        '''List all living couples in a GEDCOM file whose marriage anniversaries occur in the next 30 days '''
+        upcoming_aday_lst = self.list_upcoming_anniversaries()
+
+        pt_upcoming_adays: PrettyTable = PrettyTable(field_names=['Family ID', 'Husband Name', 'Husband ID', "Wife Name", "Wife ID", "Marriage Date", "Days Until"])
+
+        for id, delta in upcoming_aday_lst:
+            f = self._family_dt[id]
+            pt_upcoming_adays.add_row([id, f.husband_name, f.husband_id, f.wife_name, f.wife_id, f.marriage_date, delta])
+
+        pt_upcoming_adays.sortby = "Days Until"
+        pt_upcoming_adays.reversesort = False
+
+        if len(upcoming_aday_lst) > 0:
+            print(f'\nUS39: Upcoming Anniversaries:\n{pt_upcoming_adays}\n')
+        return pt_upcoming_adays
+
+
+
+
+
 def main() -> None:
     '''Runs main program'''
 
@@ -1094,7 +1144,7 @@ def main() -> None:
 
     # Sprint 04
     gedcom.US38_print_upcoming_birthdays()
-
+    gedcom.US39_print_upcoming_anniversaries()
 
 
 

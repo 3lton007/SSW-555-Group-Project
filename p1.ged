@@ -912,13 +912,29 @@
 
 
 
-
+0 NOTE US38 Upcoming Birthday
 0 @P6@ INDI
 1 NAME Tony /Tiger/
 1 SEX M
 1 BIRT
 2 DATE 21 AUG 2000
 1 FAMC @FA0@
+1 FAMS @F_P2@
+
+0 NOTE US39 Upcoming Anniversary
+0 @P7@ INDI
+1 NAME Tibby /Tiger/
+1 SEX F
+1 BIRT
+2 DATE 21 AUG 2002
+1 FAMS @F_P2@
+
+0 @F_P2@ FAM
+1 HUSB @P6@
+1 WIFE @P7@
+1 MARR
+2 DATE 21 AUG 1980
+
 
 
 
