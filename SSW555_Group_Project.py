@@ -1001,6 +1001,12 @@ class GedcomFile:
 
         return f'ANOMALY: US25: Individuals {child_ids} from family {family_id}, have the same name and birth date: Name: {name}, Birth Date: {birth_date}'
 
+    def date_diff_days_ignore_year(self, date1, date2):
+        ''' Returns the difference in days. Ignores year in comparison'''
+        new_date_1 = datetime.date(date1.year, date1.month, date1.day)
+        new_date_2 = datetime.date(date1.year, date2.month, date2.day)
+        day_delta = (new_date_2 - new_date_1).days # difference results in datetime.timedelta 
+        return day_delta
 
     def list_upcoming_birthdays(self):
         '''Finds all living people in a GEDCOM file whose birthdays occur in the next 30 days '''
@@ -1012,9 +1018,8 @@ class GedcomFile:
             if not person.living:
                 # Deceased, skip this person
                 continue
-            today = datetime.date.today()
-            new_birth = datetime.date(today.year, person.birth.month, person.birth.day)
-            day_delta = (new_birth - today).days # difference results in datetime.timedelta 
+
+            day_delta = self.date_diff_days_ignore_year(datetime.date.today(), person.birth)
 
             if day_delta < 0:
                 # Well, birthday has already passed this year... 
@@ -1022,6 +1027,7 @@ class GedcomFile:
             elif day_delta <= 30:
                 result.append([person.id, person.name, person.birth, day_delta])
         return result
+
 
     def US38_print_upcoming_birthdays(self) -> None:
         '''Lists all living people in a GEDCOM file whose birthdays occur in the next 30 days '''
@@ -1038,8 +1044,6 @@ class GedcomFile:
         if len(upcoming_bday_lst) > 0:
             print(f'\nUS38: Upcoming Birthdays:\n{pt_upcoming_bdays}\n')
         return pt_upcoming_bdays
-
-
 
 
     def list_upcoming_anniversaries(self):
@@ -1060,9 +1064,7 @@ class GedcomFile:
                 # Divorced couple, so skip this family
                 continue
 
-            today = datetime.date.today()
-            new_marriage_date = datetime.date(today.year, family.marriage_date.month, family.marriage_date.day)
-            day_delta = (new_marriage_date - today).days # difference results in datetime.timedelta 
+            day_delta = self.date_diff_days_ignore_year (datetime.date.today(), family.marriage_date)
 
             if day_delta < 0:
                 # Well, anniversary has already passed this year... 
@@ -1070,6 +1072,7 @@ class GedcomFile:
             elif day_delta <= 30:
                 result.append([family.id, day_delta])
         return result
+
 
     def US39_print_upcoming_anniversaries(self) -> None:
         '''List all living couples in a GEDCOM file whose marriage anniversaries occur in the next 30 days '''
