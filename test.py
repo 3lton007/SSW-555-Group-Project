@@ -1255,5 +1255,32 @@ class main_testing(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
+    def test_US29_list_deceased_individuals(self) -> None:
+        '''tests that the method implented for US29 stores the ID and Name for all individuals that are deceased'''
+
+        GedcomFile._individual_dt['@I0@'].living = False
+        GedcomFile._individual_dt['@I0@'].death_date = datetime.date(1990,10,12)
+
+        GedcomFile._individual_dt['@I1@'].living = False
+        GedcomFile._individual_dt['@I1@'].death_date = datetime.date(1985,11,11)
+
+        GedcomFile._individual_dt['@I2@'].living = False
+        GedcomFile._individual_dt['@I2@'].death_date = datetime.date(1995,11,11)
+
+
+        result: Dict[str, str] = GedcomFile.US29_list_deceased_individuals(self.gedcom)
+
+        expected: Dict[str, str] = {
+
+                    '@I0@' : {'name':'Test Subject0', 'death date': datetime.date(1990,10,12)},
+                    '@I1@' : {'name':'Test Subject1', 'death date': datetime.date(1985,11,11)},
+                    '@I2@' : {'name':'Test Subject2', 'death date': datetime.date(1995,11,11)},
+        }
+
+
+        self.assertEqual(result, expected)
+
+
+
 if __name__ == '__main__':
     unittest.main()

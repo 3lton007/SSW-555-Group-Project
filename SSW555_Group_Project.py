@@ -1120,6 +1120,25 @@ class GedcomFile:
         if type_of_error == 'child error':
             return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show child inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as child, but {individual_being_referenced.id}-{individual_being_referenced.name} is child in {", ".join(individual_being_referenced.famc)}'
 
+    def US29_list_deceased_individuals(self) -> Dict[str, str]:
+        '''Prints a prettytable that contains all deceased individuals'''
+
+        deceased_individuals: Dict[str, str] = defaultdict(dict) #key = individuals ID : value = {name:individuals name, death date:individual death date}
+
+        pretty_table_for_deceased_individuals: PrettyTable = PrettyTable(field_names = ['ID', 'Name', 'Date of Death'])
+
+        for individual_id, individual in self._individual_dt.items():
+            if individual.living == False:
+                deceased_individuals[individual_id]
+                deceased_individuals[individual_id]['name'] = individual.name
+                deceased_individuals[individual_id]['death date'] = individual.death_date
+                pretty_table_for_deceased_individuals.add_row([individual_id, individual.name, individual.death_date])
+        
+        print(f'\nUS29: All Deceased Individuals\n{pretty_table_for_deceased_individuals}')
+
+        return deceased_individuals
+
+
 def main() -> None:
     '''Runs main program'''
 
@@ -1171,6 +1190,7 @@ def main() -> None:
 
     gedcom.US26_corresponding_entries_individuals()
     gedcom.US26_corresponding_entries_families()
+    gedcom.US29_list_deceased_individuals()
 
 if __name__ == '__main__':
     main()
