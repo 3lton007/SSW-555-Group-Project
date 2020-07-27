@@ -1001,6 +1001,99 @@ class GedcomFile:
 
         return f'ANOMALY: US25: Individuals {child_ids} from family {family_id}, have the same name and birth date: Name: {name}, Birth Date: {birth_date}'
 
+    def date_diff_days_ignore_year(self, date1, date2):
+        ''' Returns the difference in days. Ignores year in comparison'''
+        new_date_1 = datetime.date(date1.year, date1.month, date1.day)
+        new_date_2 = datetime.date(date1.year, date2.month, date2.day)
+        day_delta = (new_date_2 - new_date_1).days # difference results in datetime.timedelta 
+        return day_delta
+
+    def list_upcoming_birthdays(self):
+        '''Finds all living people in a GEDCOM file whose birthdays occur in the next 30 days '''
+        result = list()
+        for person in self._individual_dt.values():
+            if type(person.birth) != datetime.date:
+                # Invalid entry. Birth date never logged, so skip this individual.
+                continue
+            if not person.living:
+                # Deceased, skip this person
+                continue
+
+            day_delta = self.date_diff_days_ignore_year(datetime.date.today(), person.birth)
+
+            if day_delta < 0:
+                # Well, birthday has already passed this year... 
+                continue
+            elif day_delta <= 30:
+                result.append([person.id, person.name, person.birth, day_delta])
+        return result
+
+
+    def US38_print_upcoming_birthdays(self) -> None:
+        '''Lists all living people in a GEDCOM file whose birthdays occur in the next 30 days '''
+        upcoming_bday_lst = self.list_upcoming_birthdays()
+
+        pt_upcoming_bdays: PrettyTable = PrettyTable(field_names=['ID', 'Name', "Birth Date", "Days Until"])
+
+        for id, name, birthdate, delta in upcoming_bday_lst:
+            pt_upcoming_bdays.add_row([id, name, birthdate, delta])
+
+        pt_upcoming_bdays.sortby = "Days Until"
+        pt_upcoming_bdays.reversesort = False
+
+        if len(upcoming_bday_lst) > 0:
+            print(f'\nUS38: Upcoming Birthdays:\n{pt_upcoming_bdays}\n')
+        return pt_upcoming_bdays
+
+
+    def list_upcoming_anniversaries(self):
+        '''
+        Finds all living couples in a GEDCOM file whose marriage anniversaries occur in the next 30 days.
+        Divorced couples are not included.
+        '''
+        result = list()
+        for family in self._family_dt.values():
+            if type(family.marriage_date) != datetime.date:
+                # Invalid entry. marriage date never logged, so skip this individual.
+                continue
+            if not self._individual_dt[family.husband_id].living or not self._individual_dt[family.wife_id].living:
+                # One of the spouses are deceased, skip this family
+                continue
+
+            if family.divorce_date != 'NA':
+                # Divorced couple, so skip this family
+                continue
+
+            day_delta = self.date_diff_days_ignore_year (datetime.date.today(), family.marriage_date)
+
+            if day_delta < 0:
+                # Well, anniversary has already passed this year... 
+                continue
+            elif day_delta <= 30:
+                result.append([family.id, day_delta])
+        return result
+
+
+    def US39_print_upcoming_anniversaries(self) -> None:
+        '''List all living couples in a GEDCOM file whose marriage anniversaries occur in the next 30 days '''
+        upcoming_aday_lst = self.list_upcoming_anniversaries()
+
+        pt_upcoming_adays: PrettyTable = PrettyTable(field_names=['Family ID', 'Husband Name', 'Husband ID', "Wife Name", "Wife ID", "Marriage Date", "Days Until"])
+
+        for id, delta in upcoming_aday_lst:
+            f = self._family_dt[id]
+            pt_upcoming_adays.add_row([id, f.husband_name, f.husband_id, f.wife_name, f.wife_id, f.marriage_date, delta])
+
+        pt_upcoming_adays.sortby = "Days Until"
+        pt_upcoming_adays.reversesort = False
+
+        if len(upcoming_aday_lst) > 0:
+            print(f'\nUS39: Upcoming Anniversaries:\n{pt_upcoming_adays}\n')
+        return pt_upcoming_adays
+
+
+
+
 
     def US26_corresponding_entries_individuals(self) -> str:
         '''Goes through each individual record and calls cross_reference_family() to cross reference the families that are identified in the family related tags of the
@@ -1187,10 +1280,13 @@ def main() -> None:
     gedcom.US24_unique_families_by_spouses()
     gedcom.US25_unique_first_names_in_families()
 
-
+    # Sprint 04
+    gedcom.US38_print_upcoming_birthdays()
+    gedcom.US39_print_upcoming_anniversaries()
     gedcom.US26_corresponding_entries_individuals()
     gedcom.US26_corresponding_entries_families()
     gedcom.US29_list_deceased_individuals()
+
 
 if __name__ == '__main__':
     main()
