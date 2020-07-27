@@ -1095,6 +1095,143 @@ class GedcomFile:
 
 
 
+    def US26_corresponding_entries_individuals(self) -> str:
+        '''Goes through each individual record and calls cross_reference_family() to cross reference the families that are identified in the family related tags of the
+            individual record: "fams" and "famc". If there is inconsistency between the individual and the family, then an error message is collected and printed. 
+        '''
+
+        output: List[str] = list()
+
+        for individual in self._individual_dt.values():
+            error_messages: List[str] = self.US26_cross_reference_family(individual)
+            
+            if len(error_messages) > 0:
+                for message in error_messages:
+                    print(message)
+                    output.append(message)
+
+        return output
+
+    def US26_cross_reference_family(self, individual: Individual) -> None:
+        '''Cross references the families that are identified in the "fams" and "famc" tags of an individual record to make sure there is consistency with both
+           the individual and family record'''
+
+        error_messages: List[str] = list()
+
+        for family_id in individual.fams:
+            family_being_referenced: Family = self._family_dt[family_id]
+
+            if individual.sex == 'M':
+                if individual.id != family_being_referenced.husband_id:
+                    error_messages.append(self.US26_error_message_for_individual(individual, family_being_referenced, 'husband error'))
+
+            elif individual.sex == 'F':
+                if individual.id != family_being_referenced.wife_id:
+                    error_messages.append(self.US26_error_message_for_individual(individual, family_being_referenced, 'wife error'))
+
+        for family_id in individual.famc:
+            family_being_referenced: Family = self._family_dt[family_id]
+ 
+            if individual.id not in family_being_referenced.children:
+                error_messages.append(self.US26_error_message_for_individual(individual, family_being_referenced, 'child error'))
+
+        return error_messages
+
+    def US26_error_message_for_individual(self, individual: Individual, family_being_referenced: Family, type_of_error: str):
+        '''Returns the appropriate spouse or child error message when inconsistencies are found in an Individual record'''
+
+        if type_of_error == 'husband error':
+            return f'ERROR: US26: Individual {individual.id}-{individual.name} and Family {family_being_referenced.id} show spouse inconsistency. {individual.id}-{individual.name} is identified as husband in {family_being_referenced.id}, but {family_being_referenced.id} identifies husband as {family_being_referenced.husband_id}-{family_being_referenced.husband_name}'
+
+        elif type_of_error == 'wife error':
+            return f'ERROR: US26: Individual {individual.id}-{individual.name} and Family {family_being_referenced.id} show spouse inconsistency. {individual.id}-{individual.name} is identified as wife in {family_being_referenced.id}, but {family_being_referenced.id} identifies wife as {family_being_referenced.wife_id}-{family_being_referenced.wife_name}'
+
+        elif type_of_error == 'child error':
+            if len(family_being_referenced.children) == 0:
+                return f'ERROR: US26: Individual {individual.id}-{individual.name} and Family {family_being_referenced.id} show children inconsistency. {individual.id}-{individual.name} is identified as child in {family_being_referenced.id}, but {family_being_referenced.id} has no children.' 
+            else:
+                return f'ERROR: US26: Individual {individual.id}-{individual.name} and Family {family_being_referenced.id} show children inconsistency. {individual.id}-{individual.name} is identified as child in {family_being_referenced.id}, but {family_being_referenced.id} identifies children as {", ".join(family_being_referenced.children)}'
+
+    def US26_corresponding_entries_families(self):
+        '''Goes through each family record and calls cross_reference_individual() to cross reference the individuals that are identified as the husband, wife, or child
+             in the family. If there is inconsistency between the family and any individual, then an error message is collected and printed. 
+        '''
+
+        output: List[str] = list()
+        
+        for family in self._family_dt.values():
+            error_messages: List[str] = self.US26_cross_reference_individual(family)
+
+            if len(error_messages) > 0:
+                for message in error_messages:
+                    print(message)
+                    output.append(message)
+
+        return output
+
+    def US26_cross_reference_individual(self, family: Family) -> List[str]:
+        '''Cross references the individuals that are identified in a family as husband, wife, or child to make sure there is consistency with both
+           the family and individual record'''
+
+        error_messages: List[str] = list()
+
+        if family.husband_id != '':
+            husband_being_referenced: Individual = self._individual_dt[family.husband_id]
+
+            if family.id not in husband_being_referenced.fams:
+                error_messages.append(self.US26_error_messages_for_family(family, husband_being_referenced, 'husband error'))
+        
+        if family.wife_id != '':
+            wife_being_referenced: Individual = self._individual_dt[family.wife_id]
+
+            if family.id not in wife_being_referenced.fams:
+                error_messages.append(self.US26_error_messages_for_family(family, wife_being_referenced, 'wife error'))
+
+        for child_id in family.children:
+            child_being_referenced: Individual = self._individual_dt[child_id]
+
+            if family.id not in child_being_referenced.famc:
+                error_messages.append(self.US26_error_messages_for_family(family, child_being_referenced, 'child error'))
+
+        return error_messages
+
+    def US26_error_messages_for_family(self, family: Family, individual_being_referenced: Individual, type_of_error: str):
+        '''Returns the appropriate spouse or child error message when inconsistencies are found in a family record'''
+
+        if type_of_error == 'husband error':
+            if len(individual_being_referenced.fams) == 0:
+                return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show spouse inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as husband, but {individual_being_referenced.id}-{individual_being_referenced.name} is not married'
+            else:
+                return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show spouse inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as husband, but {individual_being_referenced.id}-{individual_being_referenced.name} is husband in {", ".join(individual_being_referenced.fams)}'
+
+        if type_of_error == 'wife error':
+            if len(individual_being_referenced.fams) == 0:
+                return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show spouse inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as wife, but {individual_being_referenced.id}-{individual_being_referenced.name} is not married' 
+            else:    
+                return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show spouse inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as wife, but {individual_being_referenced.id}-{individual_being_referenced.name} is wife in {", ".join(individual_being_referenced.fams)}'
+
+        if type_of_error == 'child error':
+            return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show child inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as child, but {individual_being_referenced.id}-{individual_being_referenced.name} is child in {", ".join(individual_being_referenced.famc)}'
+
+    def US29_list_deceased_individuals(self) -> Dict[str, str]:
+        '''Prints a prettytable that contains all deceased individuals'''
+
+        deceased_individuals: Dict[str, str] = defaultdict(dict) #key = individuals ID : value = {name:individuals name, death date:individual death date}
+
+        pretty_table_for_deceased_individuals: PrettyTable = PrettyTable(field_names = ['ID', 'Name', 'Date of Death'])
+
+        for individual_id, individual in self._individual_dt.items():
+            if individual.living == False:
+                deceased_individuals[individual_id]
+                deceased_individuals[individual_id]['name'] = individual.name
+                deceased_individuals[individual_id]['death date'] = individual.death_date
+                pretty_table_for_deceased_individuals.add_row([individual_id, individual.name, individual.death_date])
+        
+        print(f'\nUS29: All Deceased Individuals\n{pretty_table_for_deceased_individuals}')
+
+        return deceased_individuals
+
+
 def main() -> None:
     '''Runs main program'''
 
@@ -1143,12 +1280,12 @@ def main() -> None:
     gedcom.US24_unique_families_by_spouses()
     gedcom.US25_unique_first_names_in_families()
 
-
-
     # Sprint 04
     gedcom.US38_print_upcoming_birthdays()
     gedcom.US39_print_upcoming_anniversaries()
-
+    gedcom.US26_corresponding_entries_individuals()
+    gedcom.US26_corresponding_entries_families()
+    gedcom.US29_list_deceased_individuals()
 
 
 if __name__ == '__main__':
