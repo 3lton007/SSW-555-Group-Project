@@ -471,7 +471,7 @@ class GedcomFile:
         return(r)
     
     def US14_multiple_births(self):
-
+        '''No more than five siblings should be born at the same time '''
         r = []
         for k, v in self._family_dt.items():
             c_bday = defaultdict(int)
@@ -486,7 +486,7 @@ class GedcomFile:
         return r
 
     def US15_siblings15(self):
-
+        '''There should be fewer than 15 siblings in a family '''
         r = []
         for k,v in self._family_dt.items():
             if (len(v.children) >= 15):
