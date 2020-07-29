@@ -501,6 +501,29 @@ class main_testing(unittest.TestCase):
         result = GedcomFile.US19_married_first_cousins(self.gedcom)
         self.assertEqual(["@F_test5"],result)
 
+    def test_US14(self):
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set({"@I2@","@I3@","@I4@","@I5@","@I6@"})
+
+        GedcomFile._individual_dt["@I0@"].birth = datetime.date(1970,4,19)
+        GedcomFile._individual_dt["@I0@"].setAge()
+        GedcomFile._individual_dt["@I1@"].birth = datetime.date(1971,4,19)
+        GedcomFile._individual_dt["@I1@"].setAge()
+        GedcomFile._individual_dt["@I2@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I2@"].setAge()
+        GedcomFile._individual_dt["@I3@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I3@"].setAge()
+        GedcomFile._individual_dt["@I4@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I4@"].setAge()
+        GedcomFile._individual_dt["@I5@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I5@"].setAge()
+        GedcomFile._individual_dt["@I6@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I6@"].setAge()
+        GedcomFile._individual_dt["@I7@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I7@"].setAge()
+        GedcomFile._individual_dt["@I8@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I8@"].setAge()
 
     
 
