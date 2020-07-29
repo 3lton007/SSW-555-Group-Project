@@ -469,8 +469,29 @@ class GedcomFile:
                 print(f"ANOMALY: US19: Family id: {fam.id} Husband name: {fam.husband_name}, husband id: {fam.husband_id} and wife name: {fam.wife_name}, wife id: {fam.wife_id} are first cousins")
                 r.append(fam.id)
         return(r)
- 
+    
+    def US14_multiple_births(self):
+        r = []
+        for k, v in self._family_dt.values():
+            c_bday = defaultdict(int)
+            for c in v.children:
+                if self._individual_dt[c].birth != NA:
+                    c_bday[self._individual_dt[c].birth] += 1
+            r.extend[k for a, b in c_bday.items() if res > 5])
+        result = f"ERROR: US14: {r} has more than 5 children born on the same date "
+        print(result)
+        return r
 
+    def US15(self):
+        r = []
+        for k,v in self._family_dt.items():
+            if (len(v.children) >= 15):
+                r.append(k)
+        
+        if r:
+            result = f"ERROR: US15: {r} has more than 15 children born"
+            print(result)
+            return r
                         
     def US2_birth_before_marriage(self):
         ''''Birth should occur before marriage of an individual'''
