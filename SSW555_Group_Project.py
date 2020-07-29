@@ -486,7 +486,7 @@ class GedcomFile:
             if indi.death_date > current_date:
                 yield("Error US01 Individual'ID: {id} has divorce date  after current dates  ".format(id = indi.id))
    
-    def US17_no_marraige_2_children(self):
+      def US17_no_marraige_2_children(self):
         '''Parents should not marry any of their children'''
         fam_list = list(self._family_dt.values())
         r = list()
@@ -494,7 +494,7 @@ class GedcomFile:
            if fam.husband_id != 'NA' and fam.wife_id !='NA':
                 for famchild in fam_list:
                     if fam.husband_id in famchild.children and fam.wife_id == famchild.wife_id:
-                         output = f"Error US17 Family ID {fam.id} Mother : wife's ID {fam.wife_id}  Wife's name {fam.wife_name} is married to her children's ID {famchild.husband_name} Children's name {famchild.h_name}"
+                         output = f"Error US17 Family ID {fam.id} Mother : wife's ID {fam.wife_id}  Wife's name {fam.wife_name} is married to her children's ID {famchild.husband_id} Children's name {famchild.husband_name}"
                          print(output)
                          r.append(output)
                     elif fam.wife_id in famchild.children and fam.husband_id == famchild.husband_id:
