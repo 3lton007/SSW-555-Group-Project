@@ -471,18 +471,22 @@ class GedcomFile:
         return(r)
     
     def US14_multiple_births(self):
+
         r = []
-        for k, v in self._family_dt.values():
+        for k, v in self._family_dt.items():
             c_bday = defaultdict(int)
             for c in v.children:
-                if self._individual_dt[c].birth != NA:
+                if self._individual_dt[c].birth != 'NA':
                     c_bday[self._individual_dt[c].birth] += 1
-            r.extend[k for a, b in c_bday.items() if res > 5])
+            for a, b in c_bday.items():
+                if b > 5:
+                    r.append(k)
         result = f"ERROR: US14: {r} has more than 5 children born on the same date "
         print(result)
         return r
 
-    def US15(self):
+    def US15_siblings15(self):
+
         r = []
         for k,v in self._family_dt.items():
             if (len(v.children) >= 15):
@@ -1169,6 +1173,8 @@ def main() -> None:
     # Sprint 04
     gedcom.US38_print_upcoming_birthdays()
     gedcom.US39_print_upcoming_anniversaries()
+    gedcom.US14_multiple_births()
+    gedcom.US15_siblings15()
 
 
 
