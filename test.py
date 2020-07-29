@@ -506,9 +506,9 @@ class main_testing(unittest.TestCase):
         GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
         GedcomFile._family_dt["@F_test0"].children = set({"@I2@","@I3@","@I4@","@I5@","@I6@"})
 
-        GedcomFile._individual_dt["@I0@"].birth = datetime.date(1970,4,19)
+        GedcomFile._individual_dt["@I0@"].birth = datetime.date(1960,5,19)
         GedcomFile._individual_dt["@I0@"].setAge()
-        GedcomFile._individual_dt["@I1@"].birth = datetime.date(1971,4,19)
+        GedcomFile._individual_dt["@I1@"].birth = datetime.date(1961,6,19)
         GedcomFile._individual_dt["@I1@"].setAge()
         GedcomFile._individual_dt["@I2@"].birth = datetime.date(2000,4,29)
         GedcomFile._individual_dt["@I2@"].setAge()
