@@ -473,20 +473,26 @@ class GedcomFile:
 
     def US01_dates_b4_current(self):
         '''Dates (birth, marriage, divorce, death) should not be after the current date'''
-        current_date = str(datetime.datetime.today())
+        current_date = datetime.date.today()
         for  fam in self._family_dt.values():
-            if fam.marriage_date > current_date:
-                yield("Error US01 Family'ID: {id} has marriage dates after current dates  ".format(id = fam.id))
-            if fam.divorce_date > current_date:
-                yield("Error US01 Family'ID: {id} has divorce dates after current dates  ".format(id = fam.id))
+            if fam.marriage_date != 'NA':
+                if fam.marriage_date > current_date:
+                    print("Error US01 Family'ID: {id} has marriage dates after current dates  ".format(id = fam.id))
+
+            if fam.divorce_date != 'NA':
+                if fam.divorce_date > current_date:
+                    print("Error US01 Family'ID: {id} has divorce dates after current dates  ".format(id = fam.id))
 
         for  indi in self._individual_dt.values():
-            if indi.birth > current_date:
-                yield("Error US01 Individual'ID: {id} has birth date  after current dates  ".format(id = indi.id))
-            if indi.death_date > current_date:
-                yield("Error US01 Individual'ID: {id} has divorce date  after current dates  ".format(id = indi.id))
+            if indi.birth != '':
+                if indi.birth > current_date:
+                    print("Error US01 Individual'ID: {id} has birth date  after current dates  ".format(id = indi.id))
+
+            if indi.death_date != 'NA':        
+                if indi.death_date > current_date:
+                    print("Error US01 Individual'ID: {id} has divorce date  after current dates  ".format(id = indi.id))
    
-      def US17_no_marraige_2_children(self):
+    def US17_no_marraige_2_children(self):
         '''Parents should not marry any of their children'''
         fam_list = list(self._family_dt.values())
         r = list()
