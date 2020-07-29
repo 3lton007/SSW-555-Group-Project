@@ -910,5 +910,45 @@
 1 CHIL @K14@
 1 CHIL @K15@
 
+0 NOTE US01 Dates birth, marriage, divorce, death should not be after the current date
+0 @E4@ INDI
+1 NAME Hala /Saber/
+1 SEX F
+1 BIRT
+2 DATE 1 AUG 2020
+
+0 @E5@ INDI
+1 NAME Lana /Saber/
+1 SEX F
+1 DEAT
+2 DATE 1 AUG 2020
+
+0 @E6@ INDI
+1 NAME Radi /Alofi/
+1 SEX M
+1 BIRT
+2 DATE 10 MAR 2000
+1 FAMS @EA3@
+
+0 @E7@ INDI
+1 NAME Lenaa /Alofi/
+1 SEX F
+1 BIRT
+2 DATE 10 MAR 2000
+1 FAMS @EA3@
+
+0 @EA3@ FAM
+1 HUSB @E6@
+1 WIFE @E7@
+1 MARR
+2 DATE 1 AUG 2020
+
+0 NOTE US17 Parents should not marry any of their children
+0 @EA4@ FAM
+1 HUSB @E6@
+1 WIFE @E7@
+1 CHIL @E6@
+1 MARR
+2 DATE 3 AUG 2025
 
 0 TRLR
