@@ -469,7 +469,55 @@ class GedcomFile:
                 print(f"ANOMALY: US19: Family id: {fam.id} Husband name: {fam.husband_name}, husband id: {fam.husband_id} and wife name: {fam.wife_name}, wife id: {fam.wife_id} are first cousins")
                 r.append(fam.id)
         return(r)
- 
+
+
+    def US01_dates_b4_current(self):
+        '''Dates (birth, marriage, divorce, death) should not be after the current date'''
+        current_date = datetime.date.today()
+        r = list()
+        for  fam in self._family_dt.values():
+            if fam.marriage_date != 'NA':
+                if fam.marriage_date > current_date:
+                    output =f"Error US01 Family'ID:{fam.id} has marriage dates on {fam.marriage_date} after current date"
+                    print(output)
+                    r.append(output)
+
+            if fam.divorce_date != 'NA':
+                if fam.divorce_date > current_date:
+                    output = f"Error US01 Family'ID:{fam.id} has divorce date on {fam.divorce_date} after current date"
+                    print(output)
+                    r.append(output)
+
+        for  indi in self._individual_dt.values():
+            if indi.birth != '':
+                if indi.birth > current_date:
+                    output = f"Error US01 Individual'ID:{indi.id} has birth date on {indi.birth} after current date"
+                    print(output)
+                    r.append(output)
+
+            if indi.death_date != 'NA':        
+                if indi.death_date > current_date:
+                    output = f"Error US01 Individual'ID:{indi.id} has death date on {indi.death_date} after current date"
+                    print(output)
+                    r.append(output)
+        return r
+   
+    def US17_no_marraige_2_children(self):
+        '''Parents should not marry any of their children'''
+        fam_list = list(self._family_dt.values())
+        r = list()
+        for fam in fam_list:
+           if fam.husband_id != 'NA' and fam.wife_id !='NA':
+                for famchild in fam_list:
+                    if fam.husband_id in famchild.children and fam.wife_id == famchild.wife_id:
+                         output = f"Error US17 Family ID {fam.id} Mother: wife's ID {fam.wife_id} wife's name {fam.wife_name} is married to her child's ID {famchild.husband_id} child's name {famchild.husband_name}"
+                         print(output)
+                         r.append(output)
+                    elif fam.wife_id in famchild.children and fam.husband_id == famchild.husband_id:
+                        output = f"Error US17 Family ID {fam.id} Father: Father's ID {fam.husband_id} husban's name {fam.husband_name} is married to his child's ID {famchild.wife_id} child's name {famchild.wife_name}"
+                        print(output)
+                        r.append(output)
+        return r 
 
                         
     def US2_birth_before_marriage(self):
@@ -816,7 +864,6 @@ class GedcomFile:
         of eachother. In case of complications it could be hours. Because they are not born precisely at the same time,
         it is possible for twins to be born on different days, years, centuries, etc.
         e.g. twin 1 born at 11:59:30 on DEC 31st 1999 and twin 2 born 30 seconds later on JAN 1st 2000.
-
         We will make an assumption that a multiple birth occurred if sibblings are born within 1 day of eachother.
         '''
         multiple_births_pt: PrettyTable = PrettyTable(field_names = ['Family ID', 'Child ID', 'Child Name', 'Child Birth Date'])
@@ -1050,6 +1097,10 @@ def main() -> None:
     gedcom.US24_unique_families_by_spouses()
     gedcom.US25_unique_first_names_in_families()
 
+    # Sprint 04
+    gedcom.US01_dates_b4_current()
+    gedcom.US17_no_marraige_2_children()
+   
 
 if __name__ == '__main__':
     main()
