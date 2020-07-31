@@ -504,7 +504,18 @@ class main_testing(unittest.TestCase):
     def test_US14(self):
         GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
         GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
-        GedcomFile._family_dt["@F_test0"].children = set({"@I2@","@I3@","@I4@","@I5@","@I6@"})
+        GedcomFile._family_dt["@F_test0"].children = set({"@I2@","@I3@","@I4@","@I5@","@I6@","@I7@","@I8@"})
+
+        GedcomFile._individual_dt["@I0@"].fams = set(["@F_test0"])
+        GedcomFile._individual_dt["@I1@"].fams = set(["@F_test0"])
+        GedcomFile._individual_dt["@I2@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I3@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I4@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I5@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I6@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I7@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I8@"].famc = set(["@F_test0"])
+
 
         GedcomFile._individual_dt["@I0@"].birth = datetime.date(1960,5,19)
         GedcomFile._individual_dt["@I0@"].setAge()
@@ -524,6 +535,9 @@ class main_testing(unittest.TestCase):
         GedcomFile._individual_dt["@I7@"].setAge()
         GedcomFile._individual_dt["@I8@"].birth = datetime.date(2000,4,29)
         GedcomFile._individual_dt["@I8@"].setAge()
+
+        result = GedcomFile.US14_multiple_births(self.gedcom)
+        self.assertEqual(['@F_test0'], result)
 
     
 
