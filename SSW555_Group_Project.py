@@ -474,23 +474,33 @@ class GedcomFile:
     def US01_dates_b4_current(self):
         '''Dates (birth, marriage, divorce, death) should not be after the current date'''
         current_date = datetime.date.today()
+        r = list()
         for  fam in self._family_dt.values():
             if fam.marriage_date != 'NA':
                 if fam.marriage_date > current_date:
-                    print("Error US01 Family'ID: {id} has marriage dates after current dates  ".format(id = fam.id))
+                    output =f"Error US01 Family'ID:{fam.id} has marriage dates on {fam.marriage_date} after current date"
+                    print(output)
+                    r.append(output)
 
             if fam.divorce_date != 'NA':
                 if fam.divorce_date > current_date:
-                    print("Error US01 Family'ID: {id} has divorce dates after current dates  ".format(id = fam.id))
+                    output = f"Error US01 Family'ID:{fam.id} has divorce date on {fam.divorce_date} after current date"
+                    print(output)
+                    r.append(output)
 
         for  indi in self._individual_dt.values():
             if indi.birth != '':
                 if indi.birth > current_date:
-                    print("Error US01 Individual'ID: {id} has birth date  after current dates  ".format(id = indi.id))
+                    output = f"Error US01 Individual'ID:{indi.id} has birth date on {indi.birth} after current date"
+                    print(output)
+                    r.append(output)
 
             if indi.death_date != 'NA':        
                 if indi.death_date > current_date:
-                    print("Error US01 Individual'ID: {id} has divorce date  after current dates  ".format(id = indi.id))
+                    output = f"Error US01 Individual'ID:{indi.id} has death date on {indi.death_date} after current date"
+                    print(output)
+                    r.append(output)
+        return r
    
     def US17_no_marraige_2_children(self):
         '''Parents should not marry any of their children'''
@@ -500,11 +510,11 @@ class GedcomFile:
            if fam.husband_id != 'NA' and fam.wife_id !='NA':
                 for famchild in fam_list:
                     if fam.husband_id in famchild.children and fam.wife_id == famchild.wife_id:
-                         output = f"Error US17 Family ID {fam.id} Mother : wife's ID {fam.wife_id}  Wife's name {fam.wife_name} is married to her children's ID {famchild.husband_id} Children's name {famchild.husband_name}"
+                         output = f"Error US17 Family ID {fam.id} Mother: wife's ID {fam.wife_id} wife's name {fam.wife_name} is married to her child's ID {famchild.husband_id} child's name {famchild.husband_name}"
                          print(output)
                          r.append(output)
                     elif fam.wife_id in famchild.children and fam.husband_id == famchild.husband_id:
-                        output = f"Error US17 Family ID {fam.id} Father : Father's ID {fam.husband_id}  is married to his children's ID {famchild.child_id} Children's name {famchild.child_name}"
+                        output = f"Error US17 Family ID {fam.id} Father: Father's ID {fam.husband_id} husban's name {fam.husband_name} is married to his child's ID {famchild.wife_id} child's name {famchild.wife_name}"
                         print(output)
                         r.append(output)
         return r 
