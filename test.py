@@ -733,17 +733,19 @@ class main_testing(unittest.TestCase):
 
 
     def test_US01_dates_b4_current(self):
-        GedcomFile._family_dt["@F_test0"].marriage_date = datetime.date(2020,8,15)
-        GedcomFile._family_dt["@F_test1"].divorce_date= datetime.date(2020,8,15)
+        GedcomFile._family_dt["@F_test0"].marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=1))
+        GedcomFile._family_dt["@F_test1"].divorce_date = datetime.datetime.date(self.today + datetime.timedelta(days=365))
         GedcomFile._individual_dt["@I5@"].name = "Safa /Alofi/"
-        GedcomFile._individual_dt["@I5@"].birth = datetime.date(2020,8,15)
+        GedcomFile._individual_dt["@I5@"].birth = datetime.datetime.date(self.today + datetime.timedelta(days=30))
         GedcomFile._individual_dt["@I6@"].name = "Rana /Alofi/"
-        GedcomFile._individual_dt["@I6@"].death_date =  datetime.date(2020,8,15)
+        GedcomFile._individual_dt["@I6@"].death_date =  datetime.datetime.date(self.today + datetime.timedelta(days=365*100))
+        GedcomFile._individual_dt["@I7@"].name = "Mike /Jones/"
+        GedcomFile._individual_dt["@I7@"].birth = datetime.datetime.date(self.today + datetime.timedelta(days=0))
         result = GedcomFile.US01_dates_b4_current(self.gedcom)
-        expect = ["Error US01 Family'ID:@F_test0 has marriage dates on 2020-08-15 after current date", 
-                  "Error US01 Family'ID:@F_test1 has divorce date on 2020-08-15 after current date", 
-                  "Error US01 Individual'ID:@I5@ has birth date on 2020-08-15 after current date", 
-                  "Error US01 Individual'ID:@I6@ has death date on 2020-08-15 after current date"]
+        expect = [f"Error US01 Family'ID:@F_test0 has marriage dates on {GedcomFile._family_dt['@F_test0'].marriage_date} after current date", 
+                  f"Error US01 Family'ID:@F_test1 has divorce date on {GedcomFile._family_dt['@F_test1'].divorce_date} after current date", 
+                  f"Error US01 Individual'ID:@I5@ has birth date on {GedcomFile._individual_dt['@I5@'].birth} after current date", 
+                  f"Error US01 Individual'ID:@I6@ has death date on {GedcomFile._individual_dt['@I6@'].death_date} after current date"]
         self.assertEqual(expect, result)
     
     def test_US17_no_marraige_2_children(self):
