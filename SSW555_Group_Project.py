@@ -469,8 +469,31 @@ class GedcomFile:
                 print(f"ANOMALY: US19: Family id: {fam.id} Husband name: {fam.husband_name}, husband id: {fam.husband_id} and wife name: {fam.wife_name}, wife id: {fam.wife_id} are first cousins")
                 r.append(fam.id)
         return(r)
- 
+    
+    def US14_multiple_births(self):
+        '''No more than five siblings should be born at the same time '''
+        r = []
+        for k, v in self._family_dt.items():
+            multiple_birth = self.Determine_multiple_birth(v.children)
+            
+            if len(multiple_birth) > 5:
+                r.append(k)
+        if r:
+            print(f"ANOMALY: US14: Families {', '.join(r)} has more than 5 children born on the same time ")
 
+        return r
+
+    def US15_siblings15(self):
+        '''There should be fewer than 15 siblings in a family '''
+        r = []
+        for k,v in self._family_dt.items():
+            if (len(v.children) >= 15):
+                r.append(k)
+        
+        if r:
+            print(f"ANOMALY: US15: Families {', '.join(r)} have more than 15 children born")
+
+        return r
                         
     def US2_birth_before_marriage(self):
         ''''Birth should occur before marriage of an individual'''
@@ -809,6 +832,29 @@ class GedcomFile:
         return pt_survivors
 
 
+    def Determine_multiple_birth(self, famc):
+        multiple_birth_set = set()
+        child_lst = list()
+        for child in list(famc):
+            child_lst.append(self._individual_dt[child])
+
+            # Compare each sibling against eachother, ensuring that siblings aren't compared with themselves.
+            for i in range (len(child_lst)):
+                for j in range (i+1, len(child_lst)):
+                    # if birthdate not provided, then skip
+                    if type(child_lst[i].birth) == str or type(child_lst[j].birth) == str:
+                        continue
+
+                    # Subtract birthdates. If the difference is one day or less, then both are part of same multiple birth
+                    diff_days = abs((child_lst[i].birth - child_lst[j].birth).days)
+                    if diff_days <= 1:
+                        multiple_birth_set.add(child_lst[i])
+                        multiple_birth_set.add(child_lst[j])
+
+        return multiple_birth_set
+
+
+
     def US32_list_multiple_births(self)->None:
         ''' 
         List all multiple births
@@ -824,23 +870,8 @@ class GedcomFile:
 
         # Go through each and every family
         for fam in self._family_dt.values():
-
-            child_lst = list()
-            for child in list(fam.children):
-                child_lst.append(self._individual_dt[child])
-
-            # Compare each sibling against eachother, ensuring that siblings aren't compared with themselves.
-            for i in range (len(child_lst)):
-                for j in range (i+1, len(child_lst)):
-                    # if birthdate not provided, then skip
-                    if type(child_lst[i].birth) == str or type(child_lst[j].birth) == str:
-                        continue
-
-                    # Subtract birthdates. If the difference is one day or less, then both are part of same multiple birth
-                    diff_days = abs((child_lst[i].birth - child_lst[j].birth).days)
-                    if diff_days <= 1:
-                        multiple_birth_set.add(child_lst[i])
-                        multiple_birth_set.add(child_lst[j])
+            temp = self.Determine_multiple_birth(fam.children)
+            multiple_birth_set.update(temp)
 
         for child in multiple_birth_set:
             multiple_births_pt.add_row([str(child.famc), child.id, child.name, child.birth])
@@ -1283,10 +1314,11 @@ def main() -> None:
     # Sprint 04
     gedcom.US38_print_upcoming_birthdays()
     gedcom.US39_print_upcoming_anniversaries()
+    gedcom.US14_multiple_births()
+    gedcom.US15_siblings15()
     gedcom.US26_corresponding_entries_individuals()
     gedcom.US26_corresponding_entries_families()
     gedcom.US29_list_deceased_individuals()
-
 
 if __name__ == '__main__':
     main()
