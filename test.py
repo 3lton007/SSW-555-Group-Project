@@ -809,6 +809,47 @@ class main_testing(unittest.TestCase):
         self.assertEqual(expected_pt.get_string(), actual_pt.get_string())
 
 
+    def test_US01_dates_b4_current(self):
+        GedcomFile._family_dt["@F_test0"].marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=1))
+        GedcomFile._family_dt["@F_test1"].divorce_date = datetime.datetime.date(self.today + datetime.timedelta(days=365))
+        GedcomFile._individual_dt["@I5@"].name = "Safa /Alofi/"
+        GedcomFile._individual_dt["@I5@"].birth = datetime.datetime.date(self.today + datetime.timedelta(days=30))
+        GedcomFile._individual_dt["@I6@"].name = "Rana /Alofi/"
+        GedcomFile._individual_dt["@I6@"].death_date =  datetime.datetime.date(self.today + datetime.timedelta(days=365*100))
+        GedcomFile._individual_dt["@I7@"].name = "Mike /Jones/"
+        GedcomFile._individual_dt["@I7@"].birth = datetime.datetime.date(self.today + datetime.timedelta(days=0))
+        result = GedcomFile.US01_dates_b4_current(self.gedcom)
+        expect = [f"Error US01 Family'ID:@F_test0 has marriage dates on {GedcomFile._family_dt['@F_test0'].marriage_date} after current date", 
+                  f"Error US01 Family'ID:@F_test1 has divorce date on {GedcomFile._family_dt['@F_test1'].divorce_date} after current date", 
+                  f"Error US01 Individual'ID:@I5@ has birth date on {GedcomFile._individual_dt['@I5@'].birth} after current date", 
+                  f"Error US01 Individual'ID:@I6@ has death date on {GedcomFile._individual_dt['@I6@'].death_date} after current date"]
+        self.assertEqual(expect, result)
+    
+    def test_US17_no_marraige_2_children(self):
+        GedcomFile._family_dt["@F_test0"].id = "@F_test0@"
+        GedcomFile._family_dt["@F_test0"].husband_name = "Rami /Alofi/"
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I2@"
+        GedcomFile._family_dt["@F_test0"].wife_name = "Lana /Alofi/"
+        GedcomFile._family_dt["@F_test0"].wife_id= "@I5@"
+        GedcomFile._family_dt["@F_test0"].children = "@I5@"
+        GedcomFile._family_dt["@F_test1"].id = "@F_test1@"
+        GedcomFile._family_dt["@F_test1"].husband_name = "Saad /Alofi/"
+        GedcomFile._family_dt["@F_test1"].husband_id = "@I3@"
+        GedcomFile._family_dt["@F_test1"].wife_name = "Safia /Alofi/"
+        GedcomFile._family_dt["@F_test1"].wife_id= "@I6@"
+        GedcomFile._family_dt["@F_test1"].children = "@I3@"
+        result = GedcomFile.US17_no_marraige_2_children(self.gedcom)
+        expect = ["Error US17 Family ID @F_test0@ Father: Father's ID @I2@ husban's name Rami /Alofi/ is married to his child's ID @I5@ child's name Lana /Alofi/",
+                  "Error US17 Family ID @F_test1@ Mother: wife's ID @I6@ wife's name Safia /Alofi/ is married to her child's ID @I3@ child's name Saad /Alofi/", 
+                  ]
+        self.assertEqual(expect, result)
+
+
+
+
+
+    
+
     def test_US22_uni_ids_indi_fam(self):
         # For this test we are not depending on the dictionaries created as part of the test setup, since we're
         # partially testing the parser. So, clear the containers.
