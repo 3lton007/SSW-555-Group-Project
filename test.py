@@ -501,8 +501,85 @@ class main_testing(unittest.TestCase):
         result = GedcomFile.US19_married_first_cousins(self.gedcom)
         self.assertEqual(["@F_test5"],result)
 
+    def test_US14(self):
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set({"@I2@","@I3@","@I4@","@I5@","@I6@","@I7@","@I8@"})
 
-    
+        GedcomFile._individual_dt["@I0@"].fams = set(["@F_test0"])
+        GedcomFile._individual_dt["@I1@"].fams = set(["@F_test0"])
+        GedcomFile._individual_dt["@I2@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I3@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I4@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I5@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I6@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I7@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I8@"].famc = set(["@F_test0"])
+
+
+        GedcomFile._individual_dt["@I0@"].birth = datetime.date(1960,5,19)
+        GedcomFile._individual_dt["@I0@"].setAge()
+        GedcomFile._individual_dt["@I1@"].birth = datetime.date(1961,6,19)
+        GedcomFile._individual_dt["@I1@"].setAge()
+        GedcomFile._individual_dt["@I2@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I2@"].setAge()
+        GedcomFile._individual_dt["@I3@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I3@"].setAge()
+        GedcomFile._individual_dt["@I4@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I4@"].setAge()
+        GedcomFile._individual_dt["@I5@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I5@"].setAge()
+        GedcomFile._individual_dt["@I6@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I6@"].setAge()
+        GedcomFile._individual_dt["@I7@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I7@"].setAge()
+        GedcomFile._individual_dt["@I8@"].birth = datetime.date(2000,4,29)
+        GedcomFile._individual_dt["@I8@"].setAge()
+
+        result = GedcomFile.US14_multiple_births(self.gedcom)
+        self.assertEqual(['@F_test0'], result)
+
+    def test_US15(self):
+        '''Testing use case 15'''
+
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
+        GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
+        GedcomFile._family_dt["@F_test0"].children = set(["@I2@","@I3@","@I4@","@I5@","@I6@","@I7@","@I8@","@I9@","@I10@","@I11@","@I12@","@I13@","@I14@","@I15@","@I16@","@I17@"])
+
+
+        # Add more individuals and assign IDs and names.
+        # IDs are from @I0@ to @I11@
+        # Names are from "Test Subject0" to "Test Subject11"
+        # All even numbered IDs are Male. All odd are Female.
+        for i in range (12, 18):
+            person = Individual()
+            person.id = "@I" + str(i) + "@"
+            person.name = "Test " + "Subject"+ str(i)
+            person.living = True
+            person.sex = "M"
+            GedcomFile._individual_dt[person.id] = person
+        
+        GedcomFile._individual_dt["@I0@"].fams = set(["@F_test0"])
+        GedcomFile._individual_dt["@I1@"].fams = set(["@F_test0"])
+        GedcomFile._individual_dt["@I2@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I3@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I4@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I5@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I6@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I7@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I8@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I9@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I10@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I11@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I12@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I13@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I14@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I15@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I16@"].famc = set(["@F_test0"])
+        GedcomFile._individual_dt["@I17@"].famc = set(["@F_test0"])
+
+        result = GedcomFile.US15_siblings15(self.gedcom)
+        self.assertEqual(['@F_test0'], result)
 
 
 
@@ -731,6 +808,47 @@ class main_testing(unittest.TestCase):
 
         self.assertEqual(expected_pt.get_string(), actual_pt.get_string())
 
+
+    def test_US01_dates_b4_current(self):
+        GedcomFile._family_dt["@F_test0"].marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=1))
+        GedcomFile._family_dt["@F_test1"].divorce_date = datetime.datetime.date(self.today + datetime.timedelta(days=365))
+        GedcomFile._individual_dt["@I5@"].name = "Safa /Alofi/"
+        GedcomFile._individual_dt["@I5@"].birth = datetime.datetime.date(self.today + datetime.timedelta(days=30))
+        GedcomFile._individual_dt["@I6@"].name = "Rana /Alofi/"
+        GedcomFile._individual_dt["@I6@"].death_date =  datetime.datetime.date(self.today + datetime.timedelta(days=365*100))
+        GedcomFile._individual_dt["@I7@"].name = "Mike /Jones/"
+        GedcomFile._individual_dt["@I7@"].birth = datetime.datetime.date(self.today + datetime.timedelta(days=0))
+        result = GedcomFile.US01_dates_b4_current(self.gedcom)
+        expect = [f"Error US01 Family'ID:@F_test0 has marriage dates on {GedcomFile._family_dt['@F_test0'].marriage_date} after current date", 
+                  f"Error US01 Family'ID:@F_test1 has divorce date on {GedcomFile._family_dt['@F_test1'].divorce_date} after current date", 
+                  f"Error US01 Individual'ID:@I5@ has birth date on {GedcomFile._individual_dt['@I5@'].birth} after current date", 
+                  f"Error US01 Individual'ID:@I6@ has death date on {GedcomFile._individual_dt['@I6@'].death_date} after current date"]
+        self.assertEqual(expect, result)
+    
+    def test_US17_no_marraige_2_children(self):
+        GedcomFile._family_dt["@F_test0"].id = "@F_test0@"
+        GedcomFile._family_dt["@F_test0"].husband_name = "Rami /Alofi/"
+        GedcomFile._family_dt["@F_test0"].husband_id = "@I2@"
+        GedcomFile._family_dt["@F_test0"].wife_name = "Lana /Alofi/"
+        GedcomFile._family_dt["@F_test0"].wife_id= "@I5@"
+        GedcomFile._family_dt["@F_test0"].children = "@I5@"
+        GedcomFile._family_dt["@F_test1"].id = "@F_test1@"
+        GedcomFile._family_dt["@F_test1"].husband_name = "Saad /Alofi/"
+        GedcomFile._family_dt["@F_test1"].husband_id = "@I3@"
+        GedcomFile._family_dt["@F_test1"].wife_name = "Safia /Alofi/"
+        GedcomFile._family_dt["@F_test1"].wife_id= "@I6@"
+        GedcomFile._family_dt["@F_test1"].children = "@I3@"
+        result = GedcomFile.US17_no_marraige_2_children(self.gedcom)
+        expect = ["Error US17 Family ID @F_test0@ Father: Father's ID @I2@ husban's name Rami /Alofi/ is married to his child's ID @I5@ child's name Lana /Alofi/",
+                  "Error US17 Family ID @F_test1@ Mother: wife's ID @I6@ wife's name Safia /Alofi/ is married to her child's ID @I3@ child's name Saad /Alofi/", 
+                  ]
+        self.assertEqual(expect, result)
+
+
+
+
+
+    
 
     def test_US22_uni_ids_indi_fam(self):
         # For this test we are not depending on the dictionaries created as part of the test setup, since we're
@@ -1144,6 +1262,269 @@ class main_testing(unittest.TestCase):
         ]
 
         self.assertEqual(result, expected)
+
+    def test_US26_corresponding_entries_individuals(self) -> None:
+        '''tests the case where family roles (spouse, child) specified in an individual record are not consistent with the corresponding entries in the 
+            corresponding family record. If such a case is found, it is highlihgted as an error. 
+        
+        family roles in an individual record are specified as follows: spouse = "fams", child = "famc"
+        '''
+        #Clears tags to be used in test cases:
+        for individuals in GedcomFile._individual_dt.values():
+            individuals.fams: Set[str] = set()
+            individuals.famc: Set[str] = set()
+
+        for family in GedcomFile._family_dt.values():
+            family.husband_id: str = ''
+            family.wife_id: str = ''
+            family.children: Set[str] = set()
+
+        #Case where spouse and child roles are inconsistent with family record
+        GedcomFile._individual_dt['@I0@'].fams = ({'@F_test2'})
+        GedcomFile._individual_dt['@I0@'].famc = ({'@F_test3'})
+
+        #Case where only spouse role is inconsistent with family record
+        GedcomFile._individual_dt['@I1@'].fams = ({'@F_test4'})
+
+        #Case where only child role is inconsistent with family record
+        GedcomFile._individual_dt['@I2@'].famc = ({'@F_test5'})
+
+        #Family records that are inconsistent with the above individual records:
+        GedcomFile._family_dt['@F_test2'].husband_id = '@I4@'
+        GedcomFile._family_dt['@F_test3'].children = ({'@I5@', '@I6@'})
+        GedcomFile._family_dt['@F_test4'].wife_id = '@I9@'
+        GedcomFile._family_dt['@F_test5'].children = ({'@I8@'})
+
+        fam3_children: str = ', '.join(GedcomFile._family_dt['@F_test3'].children)
+
+        result: List[str] = GedcomFile.US26_corresponding_entries_individuals(self.gedcom)
+
+        expected: List[str] = [
+
+            f'ERROR: US26: Individual @I0@-Test Subject0 and Family @F_test2 show spouse inconsistency. @I0@-Test Subject0 is identified as husband in @F_test2, but @F_test2 identifies husband as @I4@-Test Subject4',
+            f'ERROR: US26: Individual @I0@-Test Subject0 and Family @F_test3 show children inconsistency. @I0@-Test Subject0 is identified as child in @F_test3, but @F_test3 identifies children as {fam3_children}',
+            f'ERROR: US26: Individual @I1@-Test Subject1 and Family @F_test4 show spouse inconsistency. @I1@-Test Subject1 is identified as wife in @F_test4, but @F_test4 identifies wife as @I9@-Test Subject9',
+            f'ERROR: US26: Individual @I2@-Test Subject2 and Family @F_test5 show children inconsistency. @I2@-Test Subject2 is identified as child in @F_test5, but @F_test5 identifies children as @I8@',
+
+        ]
+
+        self.assertEqual(result, expected)
+        
+    def test_US26_corresponding_entries_families(self) -> None:
+        '''tests the case where individual roles (spouse, child) specified in a family record are not consistent with the corresponding entries in the 
+            corresponding individual record. If such a case is found, it is highlihgted as an error
+        '''
+
+        #Clears tags to be used in test cases:
+        for individuals in GedcomFile._individual_dt.values():
+            individuals.fams: Set[str] = set()
+            individuals.famc: Set[str] = set()
+
+        for family in GedcomFile._family_dt.values():
+            family.husband_id: str = ''
+            family.wife_id: str = ''
+            family.children: Set[str] = set()
+
+        #Case where husband, wife, and child roles are inconsistent with individual record:
+        GedcomFile._family_dt['@F_test0'].husband_id = '@I0@'
+        GedcomFile._family_dt['@F_test0'].wife_id = '@I1@'
+        GedcomFile._family_dt['@F_test0'].children = ({'@I2@', '@I3@', '@I4@'})
+
+        #Case where wife role is inconsistent with individual record:
+        GedcomFile._family_dt['@F_test1'].wife_id = '@I5@'
+
+        #Case where husband role is inconsistent with individual record:
+        GedcomFile._family_dt['@F_test2'].husband_id = '@I6@'
+
+        #Case where a child role is inconsistent with individual record:
+        GedcomFile._family_dt['@F_test3'].children = ({'@I7@'})
+
+        #Individual records that are inconsistent with the above family records:
+        GedcomFile._individual_dt['@I0@'].fams = ({'@F_test5'})
+        GedcomFile._individual_dt['@I1@'].fams = ({'@F_test5'})
+        GedcomFile._individual_dt['@I2@'].famc = ({'@F_test5'})
+        GedcomFile._individual_dt['@I3@'].famc = ({'@F_test5'})
+        GedcomFile._individual_dt['@I4@'].famc = ({'@F_test5'})
+        GedcomFile._individual_dt['@I5@'].fams = ({'@F_test4'})
+        GedcomFile._individual_dt['@I6@'].fams = ({'@F_test3'})
+        GedcomFile._individual_dt['@I7@'].famc = ({'@F_test1'})
+
+        fam0_children: List[str] = list(GedcomFile._family_dt['@F_test0'].children)
+        fam0_child1: str = f'{fam0_children[0]}-{GedcomFile._individual_dt[fam0_children[0]].name}'
+        fam0_child2: str = f'{fam0_children[1]}-{GedcomFile._individual_dt[fam0_children[1]].name}'
+        fam0_child3: str = f'{fam0_children[2]}-{GedcomFile._individual_dt[fam0_children[2]].name}'
+
+        result: List[str] = GedcomFile.US26_corresponding_entries_families(self.gedcom)
+
+        expected: List[str] = [
+
+             f'ERROR: US26: Family @F_test0 and Individual @I0@-Test Subject0 show spouse inconsistency. @F_test0 identifies @I0@-Test Subject0 as husband, but @I0@-Test Subject0 is husband in @F_test5',
+             f'ERROR: US26: Family @F_test0 and Individual @I1@-Test Subject1 show spouse inconsistency. @F_test0 identifies @I1@-Test Subject1 as wife, but @I1@-Test Subject1 is wife in @F_test5',
+             f'ERROR: US26: Family @F_test0 and Individual {fam0_child1} show child inconsistency. @F_test0 identifies {fam0_child1} as child, but {fam0_child1} is child in @F_test5',
+             f'ERROR: US26: Family @F_test0 and Individual {fam0_child2} show child inconsistency. @F_test0 identifies {fam0_child2} as child, but {fam0_child2} is child in @F_test5',
+             f'ERROR: US26: Family @F_test0 and Individual {fam0_child3} show child inconsistency. @F_test0 identifies {fam0_child3} as child, but {fam0_child3} is child in @F_test5',
+             f'ERROR: US26: Family @F_test1 and Individual @I5@-Test Subject5 show spouse inconsistency. @F_test1 identifies @I5@-Test Subject5 as wife, but @I5@-Test Subject5 is wife in @F_test4',
+             f'ERROR: US26: Family @F_test2 and Individual @I6@-Test Subject6 show spouse inconsistency. @F_test2 identifies @I6@-Test Subject6 as husband, but @I6@-Test Subject6 is husband in @F_test3',
+             f'ERROR: US26: Family @F_test3 and Individual @I7@-Test Subject7 show child inconsistency. @F_test3 identifies @I7@-Test Subject7 as child, but @I7@-Test Subject7 is child in @F_test1',    
+
+        
+        ]
+
+        self.assertEqual(result, expected)
+
+
+    def test_US29_list_deceased_individuals(self) -> None:
+        '''tests that the method implented for US29 stores the ID and Name for all individuals that are deceased'''
+
+        GedcomFile._individual_dt['@I0@'].living = False
+        GedcomFile._individual_dt['@I0@'].death_date = datetime.date(1990,10,12)
+
+        GedcomFile._individual_dt['@I1@'].living = False
+        GedcomFile._individual_dt['@I1@'].death_date = datetime.date(1985,11,11)
+
+        GedcomFile._individual_dt['@I2@'].living = False
+        GedcomFile._individual_dt['@I2@'].death_date = datetime.date(1995,11,11)
+
+
+        result: Dict[str, str] = GedcomFile.US29_list_deceased_individuals(self.gedcom)
+
+        expected: Dict[str, str] = {
+
+                    '@I0@' : {'name':'Test Subject0', 'death date': datetime.date(1990,10,12)},
+                    '@I1@' : {'name':'Test Subject1', 'death date': datetime.date(1985,11,11)},
+                    '@I2@' : {'name':'Test Subject2', 'death date': datetime.date(1995,11,11)},
+        }
+
+
+        self.assertEqual(result, expected)
+
+
+
+    def test_US38_upcoming_birthdays(self):
+
+        # Let's remove the birthday from all individuals, so that the test can focus only
+        # on those that we drive as inputs. This also drives an input case for 
+        # individuals without a birthday listed.
+        for person in self.gedcom._individual_dt.values():
+            person.birth = ""
+
+        expected_persons_list = list()
+
+        # 30 Days Ahead - Expected in the output
+        person = GedcomFile._individual_dt["@I0@"]
+        person.birth = datetime.datetime.date(self.today + datetime.timedelta(days=30))
+        expected_persons_list.append([person.id, person.name, person.birth, 30])
+
+        # 30 Days Ahead, but deceased - Not expected in the output
+        person = GedcomFile._individual_dt["@I1@"]
+        person.birth = datetime.datetime.date(self.today + datetime.timedelta(days=30))
+        person.living = False
+
+        # 30 Days already past - not Expected in the output
+        person = GedcomFile._individual_dt["@I2@"]
+        person.birth = datetime.datetime.date(self.today - datetime.timedelta(days=30))
+
+        # Birthday Tomorrow! - Expected in the output
+        person = GedcomFile._individual_dt["@I3@"]
+        person.birth = datetime.datetime.date(self.today + datetime.timedelta(days=1))
+        expected_persons_list.append([person.id, person.name, person.birth, 1])
+
+        # Birthday Yesterday -Not Expected in the output
+        person = GedcomFile._individual_dt["@I4@"]
+        person.birth = datetime.datetime.date(self.today - datetime.timedelta(days=1))
+
+        # Birthday Today! - Expected in the output
+        person = GedcomFile._individual_dt["@I5@"]
+        person.birth =  datetime.date(self.today.year, self.today.month, self.today.day) 
+        expected_persons_list.append([person.id, person.name, person.birth, 0])
+
+        # 31 Days ahead - Not expected in the output
+        person = GedcomFile._individual_dt["@I11@"]
+        person.birth = datetime.datetime.date(self.today - datetime.timedelta(days=31))
+
+
+        # Invoke method under test, determine result.
+        actual = self.gedcom.list_upcoming_birthdays()
+        self.assertEqual(expected_persons_list, actual)
+
+        # Test whether the pretty table prints out correctly.
+        test_pt_upcoming_bdays: PrettyTable = PrettyTable(field_names=['ID', 'Name', "Birth Date", "Days Until"])
+
+        for id, name, birthdate, days_till in expected_persons_list:
+            test_pt_upcoming_bdays.add_row([id, name, birthdate, days_till])
+
+        test_pt_upcoming_bdays.sortby = "Days Until"
+        test_pt_upcoming_bdays.reversesort = False
+
+        actual_pt = self.gedcom.US38_print_upcoming_birthdays()
+        self.assertEqual(test_pt_upcoming_bdays.get_string(), actual_pt.get_string())
+
+
+
+
+
+
+    def test_US39_upcoming_anniversaries(self):
+
+        # Default families and individuals
+        for family in self.gedcom._family_dt.values():
+            family.marriage_date = "NA"
+            family.divorce_date = "NA"
+            self.gedcom._individual_dt[family.husband_id].living = True
+            self.gedcom._individual_dt[family.husband_id].death_date = "NA"
+            self.gedcom._individual_dt[family.wife_id].living = True
+            self.gedcom._individual_dt[family.wife_id].death_date = "NA"
+
+        expected_family_list = list()
+
+        # 30 Days Ahead - Expected in the output
+        family = GedcomFile._family_dt["@F_test0"]
+        family.marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=30))
+        expected_family_list.append([family.id, 30])
+
+        # 30 Days Ahead, but divorced - Not expected in the output
+        family = GedcomFile._family_dt["@F_test1"]
+        family.marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=30))
+        family.divorce_date =  datetime.datetime.date(self.today + datetime.timedelta(days=365))
+
+        # 1 Day already past - not Expected in the output
+        family = GedcomFile._family_dt["@F_test2"]
+        family.marriage_date = datetime.datetime.date(self.today - datetime.timedelta(days=1))
+
+        # Anniversary Tomorrow! - Expected in the output
+        family = GedcomFile._family_dt["@F_test3"]
+        family.marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=1))
+        expected_family_list.append([family.id, 1])
+
+        # Anniversary Today, but spouse is deceased. Not Expected in the output
+        family = GedcomFile._family_dt["@F_test4"]
+        family.marriage_date =  datetime.date(self.today.year, self.today.month, self.today.day)
+        self.gedcom._individual_dt[family.wife_id].living = False
+
+        # 31 Days ahead - Not expected in the output
+        family = GedcomFile._family_dt["@F_test5"]
+        family.marriage_date = datetime.datetime.date(self.today + datetime.timedelta(days=31))
+
+        # Invoke method under test, determine result.
+        actual = self.gedcom.list_upcoming_anniversaries()
+        self.assertEqual(expected_family_list, actual)
+
+        # Test whether the pretty table prints out correctly.
+        test_pt_upcoming_adays: PrettyTable = PrettyTable(field_names=['Family ID', 'Husband Name', 'Husband ID', "Wife Name", "Wife ID", "Marriage Date", "Days Until"])
+
+        for id, days_till in expected_family_list:
+            f = self.gedcom._family_dt[id]
+            test_pt_upcoming_adays.add_row([id, f.husband_name, f.husband_id, f.wife_name, f.wife_id, f.marriage_date, days_till])
+
+        test_pt_upcoming_adays.sortby = "Days Until"
+        test_pt_upcoming_adays.reversesort = False
+
+        actual_pt = self.gedcom.US39_print_upcoming_anniversaries()
+        self.assertEqual(test_pt_upcoming_adays.get_string(), actual_pt.get_string())
+
+
+
+
 
 
 if __name__ == '__main__':

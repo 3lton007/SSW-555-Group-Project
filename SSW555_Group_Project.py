@@ -470,7 +470,6 @@ class GedcomFile:
                 r.append(fam.id)
         return(r)
 
-
     def US01_dates_b4_current(self):
         '''Dates (birth, marriage, divorce, death) should not be after the current date'''
         current_date = datetime.date.today()
@@ -519,6 +518,30 @@ class GedcomFile:
                         r.append(output)
         return r 
 
+    def US14_multiple_births(self):
+        '''No more than five siblings should be born at the same time '''
+        r = []
+        for k, v in self._family_dt.items():
+            multiple_birth = self.Determine_multiple_birth(v.children)
+            
+            if len(multiple_birth) > 5:
+                r.append(k)
+        if r:
+            print(f"ANOMALY: US14: Families {', '.join(r)} has more than 5 children born on the same time ")
+
+        return r
+
+    def US15_siblings15(self):
+        '''There should be fewer than 15 siblings in a family '''
+        r = []
+        for k,v in self._family_dt.items():
+            if (len(v.children) >= 15):
+                r.append(k)
+        
+        if r:
+            print(f"ANOMALY: US15: Families {', '.join(r)} have more than 15 children born")
+
+        return r
                         
     def US2_birth_before_marriage(self):
         ''''Birth should occur before marriage of an individual'''
@@ -856,6 +879,29 @@ class GedcomFile:
             print(f"US37: Survivors of recently deceased:\n{pt_survivors}")
         return pt_survivors
 
+                  
+    def Determine_multiple_birth(self, famc):
+        multiple_birth_set = set()
+        child_lst = list()
+        for child in list(famc):
+            child_lst.append(self._individual_dt[child])
+
+            # Compare each sibling against eachother, ensuring that siblings aren't compared with themselves.
+            for i in range (len(child_lst)):
+                for j in range (i+1, len(child_lst)):
+                    # if birthdate not provided, then skip
+                    if type(child_lst[i].birth) == str or type(child_lst[j].birth) == str:
+                        continue
+
+                    # Subtract birthdates. If the difference is one day or less, then both are part of same multiple birth
+                    diff_days = abs((child_lst[i].birth - child_lst[j].birth).days)
+                    if diff_days <= 1:
+                        multiple_birth_set.add(child_lst[i])
+                        multiple_birth_set.add(child_lst[j])
+
+        return multiple_birth_set
+
+
 
     def US32_list_multiple_births(self)->None:
         ''' 
@@ -871,23 +917,8 @@ class GedcomFile:
 
         # Go through each and every family
         for fam in self._family_dt.values():
-
-            child_lst = list()
-            for child in list(fam.children):
-                child_lst.append(self._individual_dt[child])
-
-            # Compare each sibling against eachother, ensuring that siblings aren't compared with themselves.
-            for i in range (len(child_lst)):
-                for j in range (i+1, len(child_lst)):
-                    # if birthdate not provided, then skip
-                    if type(child_lst[i].birth) == str or type(child_lst[j].birth) == str:
-                        continue
-
-                    # Subtract birthdates. If the difference is one day or less, then both are part of same multiple birth
-                    diff_days = abs((child_lst[i].birth - child_lst[j].birth).days)
-                    if diff_days <= 1:
-                        multiple_birth_set.add(child_lst[i])
-                        multiple_birth_set.add(child_lst[j])
+            temp = self.Determine_multiple_birth(fam.children)
+            multiple_birth_set.update(temp)
 
         for child in multiple_birth_set:
             multiple_births_pt.add_row([str(child.famc), child.id, child.name, child.birth])
@@ -1048,6 +1079,236 @@ class GedcomFile:
 
         return f'ANOMALY: US25: Individuals {child_ids} from family {family_id}, have the same name and birth date: Name: {name}, Birth Date: {birth_date}'
 
+    def date_diff_days_ignore_year(self, date1, date2):
+        ''' Returns the difference in days. Ignores year in comparison'''
+        new_date_1 = datetime.date(date1.year, date1.month, date1.day)
+        new_date_2 = datetime.date(date1.year, date2.month, date2.day)
+        day_delta = (new_date_2 - new_date_1).days # difference results in datetime.timedelta 
+        return day_delta
+
+    def list_upcoming_birthdays(self):
+        '''Finds all living people in a GEDCOM file whose birthdays occur in the next 30 days '''
+        result = list()
+        for person in self._individual_dt.values():
+            if type(person.birth) != datetime.date:
+                # Invalid entry. Birth date never logged, so skip this individual.
+                continue
+            if not person.living:
+                # Deceased, skip this person
+                continue
+
+            day_delta = self.date_diff_days_ignore_year(datetime.date.today(), person.birth)
+
+            if day_delta < 0:
+                # Well, birthday has already passed this year... 
+                continue
+            elif day_delta <= 30:
+                result.append([person.id, person.name, person.birth, day_delta])
+        return result
+
+
+    def US38_print_upcoming_birthdays(self) -> None:
+        '''Lists all living people in a GEDCOM file whose birthdays occur in the next 30 days '''
+        upcoming_bday_lst = self.list_upcoming_birthdays()
+
+        pt_upcoming_bdays: PrettyTable = PrettyTable(field_names=['ID', 'Name', "Birth Date", "Days Until"])
+
+        for id, name, birthdate, delta in upcoming_bday_lst:
+            pt_upcoming_bdays.add_row([id, name, birthdate, delta])
+
+        pt_upcoming_bdays.sortby = "Days Until"
+        pt_upcoming_bdays.reversesort = False
+
+        if len(upcoming_bday_lst) > 0:
+            print(f'\nUS38: Upcoming Birthdays:\n{pt_upcoming_bdays}\n')
+        return pt_upcoming_bdays
+
+
+    def list_upcoming_anniversaries(self):
+        '''
+        Finds all living couples in a GEDCOM file whose marriage anniversaries occur in the next 30 days.
+        Divorced couples are not included.
+        '''
+        result = list()
+        for family in self._family_dt.values():
+            if type(family.marriage_date) != datetime.date:
+                # Invalid entry. marriage date never logged, so skip this individual.
+                continue
+            if not self._individual_dt[family.husband_id].living or not self._individual_dt[family.wife_id].living:
+                # One of the spouses are deceased, skip this family
+                continue
+
+            if family.divorce_date != 'NA':
+                # Divorced couple, so skip this family
+                continue
+
+            day_delta = self.date_diff_days_ignore_year (datetime.date.today(), family.marriage_date)
+
+            if day_delta < 0:
+                # Well, anniversary has already passed this year... 
+                continue
+            elif day_delta <= 30:
+                result.append([family.id, day_delta])
+        return result
+
+
+    def US39_print_upcoming_anniversaries(self) -> None:
+        '''List all living couples in a GEDCOM file whose marriage anniversaries occur in the next 30 days '''
+        upcoming_aday_lst = self.list_upcoming_anniversaries()
+
+        pt_upcoming_adays: PrettyTable = PrettyTable(field_names=['Family ID', 'Husband Name', 'Husband ID', "Wife Name", "Wife ID", "Marriage Date", "Days Until"])
+
+        for id, delta in upcoming_aday_lst:
+            f = self._family_dt[id]
+            pt_upcoming_adays.add_row([id, f.husband_name, f.husband_id, f.wife_name, f.wife_id, f.marriage_date, delta])
+
+        pt_upcoming_adays.sortby = "Days Until"
+        pt_upcoming_adays.reversesort = False
+
+        if len(upcoming_aday_lst) > 0:
+            print(f'\nUS39: Upcoming Anniversaries:\n{pt_upcoming_adays}\n')
+        return pt_upcoming_adays
+
+
+
+
+
+    def US26_corresponding_entries_individuals(self) -> str:
+        '''Goes through each individual record and calls cross_reference_family() to cross reference the families that are identified in the family related tags of the
+            individual record: "fams" and "famc". If there is inconsistency between the individual and the family, then an error message is collected and printed. 
+        '''
+
+        output: List[str] = list()
+
+        for individual in self._individual_dt.values():
+            error_messages: List[str] = self.US26_cross_reference_family(individual)
+            
+            if len(error_messages) > 0:
+                for message in error_messages:
+                    print(message)
+                    output.append(message)
+
+        return output
+
+    def US26_cross_reference_family(self, individual: Individual) -> None:
+        '''Cross references the families that are identified in the "fams" and "famc" tags of an individual record to make sure there is consistency with both
+           the individual and family record'''
+
+        error_messages: List[str] = list()
+
+        for family_id in individual.fams:
+            family_being_referenced: Family = self._family_dt[family_id]
+
+            if individual.sex == 'M':
+                if individual.id != family_being_referenced.husband_id:
+                    error_messages.append(self.US26_error_message_for_individual(individual, family_being_referenced, 'husband error'))
+
+            elif individual.sex == 'F':
+                if individual.id != family_being_referenced.wife_id:
+                    error_messages.append(self.US26_error_message_for_individual(individual, family_being_referenced, 'wife error'))
+
+        for family_id in individual.famc:
+            family_being_referenced: Family = self._family_dt[family_id]
+ 
+            if individual.id not in family_being_referenced.children:
+                error_messages.append(self.US26_error_message_for_individual(individual, family_being_referenced, 'child error'))
+
+        return error_messages
+
+    def US26_error_message_for_individual(self, individual: Individual, family_being_referenced: Family, type_of_error: str):
+        '''Returns the appropriate spouse or child error message when inconsistencies are found in an Individual record'''
+
+        if type_of_error == 'husband error':
+            return f'ERROR: US26: Individual {individual.id}-{individual.name} and Family {family_being_referenced.id} show spouse inconsistency. {individual.id}-{individual.name} is identified as husband in {family_being_referenced.id}, but {family_being_referenced.id} identifies husband as {family_being_referenced.husband_id}-{family_being_referenced.husband_name}'
+
+        elif type_of_error == 'wife error':
+            return f'ERROR: US26: Individual {individual.id}-{individual.name} and Family {family_being_referenced.id} show spouse inconsistency. {individual.id}-{individual.name} is identified as wife in {family_being_referenced.id}, but {family_being_referenced.id} identifies wife as {family_being_referenced.wife_id}-{family_being_referenced.wife_name}'
+
+        elif type_of_error == 'child error':
+            if len(family_being_referenced.children) == 0:
+                return f'ERROR: US26: Individual {individual.id}-{individual.name} and Family {family_being_referenced.id} show children inconsistency. {individual.id}-{individual.name} is identified as child in {family_being_referenced.id}, but {family_being_referenced.id} has no children.' 
+            else:
+                return f'ERROR: US26: Individual {individual.id}-{individual.name} and Family {family_being_referenced.id} show children inconsistency. {individual.id}-{individual.name} is identified as child in {family_being_referenced.id}, but {family_being_referenced.id} identifies children as {", ".join(family_being_referenced.children)}'
+
+    def US26_corresponding_entries_families(self):
+        '''Goes through each family record and calls cross_reference_individual() to cross reference the individuals that are identified as the husband, wife, or child
+             in the family. If there is inconsistency between the family and any individual, then an error message is collected and printed. 
+        '''
+
+        output: List[str] = list()
+        
+        for family in self._family_dt.values():
+            error_messages: List[str] = self.US26_cross_reference_individual(family)
+
+            if len(error_messages) > 0:
+                for message in error_messages:
+                    print(message)
+                    output.append(message)
+
+        return output
+
+    def US26_cross_reference_individual(self, family: Family) -> List[str]:
+        '''Cross references the individuals that are identified in a family as husband, wife, or child to make sure there is consistency with both
+           the family and individual record'''
+
+        error_messages: List[str] = list()
+
+        if family.husband_id != '':
+            husband_being_referenced: Individual = self._individual_dt[family.husband_id]
+
+            if family.id not in husband_being_referenced.fams:
+                error_messages.append(self.US26_error_messages_for_family(family, husband_being_referenced, 'husband error'))
+        
+        if family.wife_id != '':
+            wife_being_referenced: Individual = self._individual_dt[family.wife_id]
+
+            if family.id not in wife_being_referenced.fams:
+                error_messages.append(self.US26_error_messages_for_family(family, wife_being_referenced, 'wife error'))
+
+        for child_id in family.children:
+            child_being_referenced: Individual = self._individual_dt[child_id]
+
+            if family.id not in child_being_referenced.famc:
+                error_messages.append(self.US26_error_messages_for_family(family, child_being_referenced, 'child error'))
+
+        return error_messages
+
+    def US26_error_messages_for_family(self, family: Family, individual_being_referenced: Individual, type_of_error: str):
+        '''Returns the appropriate spouse or child error message when inconsistencies are found in a family record'''
+
+        if type_of_error == 'husband error':
+            if len(individual_being_referenced.fams) == 0:
+                return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show spouse inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as husband, but {individual_being_referenced.id}-{individual_being_referenced.name} is not married'
+            else:
+                return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show spouse inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as husband, but {individual_being_referenced.id}-{individual_being_referenced.name} is husband in {", ".join(individual_being_referenced.fams)}'
+
+        if type_of_error == 'wife error':
+            if len(individual_being_referenced.fams) == 0:
+                return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show spouse inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as wife, but {individual_being_referenced.id}-{individual_being_referenced.name} is not married' 
+            else:    
+                return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show spouse inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as wife, but {individual_being_referenced.id}-{individual_being_referenced.name} is wife in {", ".join(individual_being_referenced.fams)}'
+
+        if type_of_error == 'child error':
+            return f'ERROR: US26: Family {family.id} and Individual {individual_being_referenced.id}-{individual_being_referenced.name} show child inconsistency. {family.id} identifies {individual_being_referenced.id}-{individual_being_referenced.name} as child, but {individual_being_referenced.id}-{individual_being_referenced.name} is child in {", ".join(individual_being_referenced.famc)}'
+
+    def US29_list_deceased_individuals(self) -> Dict[str, str]:
+        '''Prints a prettytable that contains all deceased individuals'''
+
+        deceased_individuals: Dict[str, str] = defaultdict(dict) #key = individuals ID : value = {name:individuals name, death date:individual death date}
+
+        pretty_table_for_deceased_individuals: PrettyTable = PrettyTable(field_names = ['ID', 'Name', 'Date of Death'])
+
+        for individual_id, individual in self._individual_dt.items():
+            if individual.living == False:
+                deceased_individuals[individual_id]
+                deceased_individuals[individual_id]['name'] = individual.name
+                deceased_individuals[individual_id]['death date'] = individual.death_date
+                pretty_table_for_deceased_individuals.add_row([individual_id, individual.name, individual.death_date])
+        
+        print(f'\nUS29: All Deceased Individuals\n{pretty_table_for_deceased_individuals}')
+
+        return deceased_individuals
+
 
 def main() -> None:
     '''Runs main program'''
@@ -1100,7 +1361,13 @@ def main() -> None:
     # Sprint 04
     gedcom.US01_dates_b4_current()
     gedcom.US17_no_marraige_2_children()
-   
+    gedcom.US38_print_upcoming_birthdays()
+    gedcom.US39_print_upcoming_anniversaries()
+    gedcom.US14_multiple_births()
+    gedcom.US15_siblings15()
+    gedcom.US26_corresponding_entries_individuals()
+    gedcom.US26_corresponding_entries_families()
+    gedcom.US29_list_deceased_individuals()
 
 if __name__ == '__main__':
     main()
