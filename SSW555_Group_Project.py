@@ -474,15 +474,13 @@ class GedcomFile:
         '''No more than five siblings should be born at the same time '''
         r = []
         for k, v in self._family_dt.items():
-            c_bday = defaultdict(int)
-            for c in v.children:
-                if self._individual_dt[c].birth != 'NA':
-                    c_bday[self._individual_dt[c].birth] += 1
-            for a, b in c_bday.items():
-                if b > 5:
-                    r.append(k)
-        result = f"ERROR: US14: {r} has more than 5 children born on the same date "
-        print(result)
+            multiple_birth = self.Determine_multiple_birth(v.children)
+            
+            if len(multiple_birth) > 5:
+                r.append(k)
+        if r:
+            print(f"ANOMALY: US14: Families {', '.join(r)} has more than 5 children born on the same time ")
+
         return r
 
     def US15_siblings15(self):
@@ -493,9 +491,9 @@ class GedcomFile:
                 r.append(k)
         
         if r:
-            result = f"ERROR: US15: {r} has more than 15 children born"
-            print(result)
-            return r
+            print(f"ANOMALY: US15: Families {', '.join(r)} have more than 15 children born")
+
+        return r
                         
     def US2_birth_before_marriage(self):
         ''''Birth should occur before marriage of an individual'''
@@ -834,6 +832,29 @@ class GedcomFile:
         return pt_survivors
 
 
+    def Determine_multiple_birth(self, famc):
+        multiple_birth_set = set()
+        child_lst = list()
+        for child in list(famc):
+            child_lst.append(self._individual_dt[child])
+
+            # Compare each sibling against eachother, ensuring that siblings aren't compared with themselves.
+            for i in range (len(child_lst)):
+                for j in range (i+1, len(child_lst)):
+                    # if birthdate not provided, then skip
+                    if type(child_lst[i].birth) == str or type(child_lst[j].birth) == str:
+                        continue
+
+                    # Subtract birthdates. If the difference is one day or less, then both are part of same multiple birth
+                    diff_days = abs((child_lst[i].birth - child_lst[j].birth).days)
+                    if diff_days <= 1:
+                        multiple_birth_set.add(child_lst[i])
+                        multiple_birth_set.add(child_lst[j])
+
+        return multiple_birth_set
+
+
+
     def US32_list_multiple_births(self)->None:
         ''' 
         List all multiple births
@@ -849,23 +870,8 @@ class GedcomFile:
 
         # Go through each and every family
         for fam in self._family_dt.values():
-
-            child_lst = list()
-            for child in list(fam.children):
-                child_lst.append(self._individual_dt[child])
-
-            # Compare each sibling against eachother, ensuring that siblings aren't compared with themselves.
-            for i in range (len(child_lst)):
-                for j in range (i+1, len(child_lst)):
-                    # if birthdate not provided, then skip
-                    if type(child_lst[i].birth) == str or type(child_lst[j].birth) == str:
-                        continue
-
-                    # Subtract birthdates. If the difference is one day or less, then both are part of same multiple birth
-                    diff_days = abs((child_lst[i].birth - child_lst[j].birth).days)
-                    if diff_days <= 1:
-                        multiple_birth_set.add(child_lst[i])
-                        multiple_birth_set.add(child_lst[j])
+            temp = self.Determine_multiple_birth(fam.children)
+            multiple_birth_set.update(temp)
 
         for child in multiple_birth_set:
             multiple_births_pt.add_row([str(child.famc), child.id, child.name, child.birth])

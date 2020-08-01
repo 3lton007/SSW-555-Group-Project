@@ -544,8 +544,21 @@ class main_testing(unittest.TestCase):
 
         GedcomFile._family_dt["@F_test0"].husband_id = "@I0@"
         GedcomFile._family_dt["@F_test0"].wife_id =    "@I1@"
-        GedcomFile._family_dt["@F_test0"].children = set({"@I2@","@I3@","@I4@","@I5@","@I6@","@I7@","@I8@","@I9@","@I10@","@I11@","@I12@","@I13@","@I14@","@I15@","@I16@","@I17@"})
+        GedcomFile._family_dt["@F_test0"].children = set(["@I2@","@I3@","@I4@","@I5@","@I6@","@I7@","@I8@","@I9@","@I10@","@I11@","@I12@","@I13@","@I14@","@I15@","@I16@","@I17@"])
 
+
+        # Add more individuals and assign IDs and names.
+        # IDs are from @I0@ to @I11@
+        # Names are from "Test Subject0" to "Test Subject11"
+        # All even numbered IDs are Male. All odd are Female.
+        for i in range (12, 18):
+            person = Individual()
+            person.id = "@I" + str(i) + "@"
+            person.name = "Test " + "Subject"+ str(i)
+            person.living = True
+            person.sex = "M"
+            GedcomFile._individual_dt[person.id] = person
+        
         GedcomFile._individual_dt["@I0@"].fams = set(["@F_test0"])
         GedcomFile._individual_dt["@I1@"].fams = set(["@F_test0"])
         GedcomFile._individual_dt["@I2@"].famc = set(["@F_test0"])
@@ -564,7 +577,6 @@ class main_testing(unittest.TestCase):
         GedcomFile._individual_dt["@I15@"].famc = set(["@F_test0"])
         GedcomFile._individual_dt["@I16@"].famc = set(["@F_test0"])
         GedcomFile._individual_dt["@I17@"].famc = set(["@F_test0"])
-        
 
         result = GedcomFile.US15_siblings15(self.gedcom)
         self.assertEqual(['@F_test0'], result)
