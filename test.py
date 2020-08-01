@@ -1222,6 +1222,142 @@ class main_testing(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
+    def test_US26_corresponding_entries_individuals(self) -> None:
+        '''tests the case where family roles (spouse, child) specified in an individual record are not consistent with the corresponding entries in the 
+            corresponding family record. If such a case is found, it is highlihgted as an error. 
+        
+        family roles in an individual record are specified as follows: spouse = "fams", child = "famc"
+        '''
+        #Clears tags to be used in test cases:
+        for individuals in GedcomFile._individual_dt.values():
+            individuals.fams: Set[str] = set()
+            individuals.famc: Set[str] = set()
+
+        for family in GedcomFile._family_dt.values():
+            family.husband_id: str = ''
+            family.wife_id: str = ''
+            family.children: Set[str] = set()
+
+        #Case where spouse and child roles are inconsistent with family record
+        GedcomFile._individual_dt['@I0@'].fams = ({'@F_test2'})
+        GedcomFile._individual_dt['@I0@'].famc = ({'@F_test3'})
+
+        #Case where only spouse role is inconsistent with family record
+        GedcomFile._individual_dt['@I1@'].fams = ({'@F_test4'})
+
+        #Case where only child role is inconsistent with family record
+        GedcomFile._individual_dt['@I2@'].famc = ({'@F_test5'})
+
+        #Family records that are inconsistent with the above individual records:
+        GedcomFile._family_dt['@F_test2'].husband_id = '@I4@'
+        GedcomFile._family_dt['@F_test3'].children = ({'@I5@', '@I6@'})
+        GedcomFile._family_dt['@F_test4'].wife_id = '@I9@'
+        GedcomFile._family_dt['@F_test5'].children = ({'@I8@'})
+
+        fam3_children: str = ', '.join(GedcomFile._family_dt['@F_test3'].children)
+
+        result: List[str] = GedcomFile.US26_corresponding_entries_individuals(self.gedcom)
+
+        expected: List[str] = [
+
+            f'ERROR: US26: Individual @I0@-Test Subject0 and Family @F_test2 show spouse inconsistency. @I0@-Test Subject0 is identified as husband in @F_test2, but @F_test2 identifies husband as @I4@-Test Subject4',
+            f'ERROR: US26: Individual @I0@-Test Subject0 and Family @F_test3 show children inconsistency. @I0@-Test Subject0 is identified as child in @F_test3, but @F_test3 identifies children as {fam3_children}',
+            f'ERROR: US26: Individual @I1@-Test Subject1 and Family @F_test4 show spouse inconsistency. @I1@-Test Subject1 is identified as wife in @F_test4, but @F_test4 identifies wife as @I9@-Test Subject9',
+            f'ERROR: US26: Individual @I2@-Test Subject2 and Family @F_test5 show children inconsistency. @I2@-Test Subject2 is identified as child in @F_test5, but @F_test5 identifies children as @I8@',
+
+        ]
+
+        self.assertEqual(result, expected)
+        
+    def test_US26_corresponding_entries_families(self) -> None:
+        '''tests the case where individual roles (spouse, child) specified in a family record are not consistent with the corresponding entries in the 
+            corresponding individual record. If such a case is found, it is highlihgted as an error
+        '''
+
+        #Clears tags to be used in test cases:
+        for individuals in GedcomFile._individual_dt.values():
+            individuals.fams: Set[str] = set()
+            individuals.famc: Set[str] = set()
+
+        for family in GedcomFile._family_dt.values():
+            family.husband_id: str = ''
+            family.wife_id: str = ''
+            family.children: Set[str] = set()
+
+        #Case where husband, wife, and child roles are inconsistent with individual record:
+        GedcomFile._family_dt['@F_test0'].husband_id = '@I0@'
+        GedcomFile._family_dt['@F_test0'].wife_id = '@I1@'
+        GedcomFile._family_dt['@F_test0'].children = ({'@I2@', '@I3@', '@I4@'})
+
+        #Case where wife role is inconsistent with individual record:
+        GedcomFile._family_dt['@F_test1'].wife_id = '@I5@'
+
+        #Case where husband role is inconsistent with individual record:
+        GedcomFile._family_dt['@F_test2'].husband_id = '@I6@'
+
+        #Case where a child role is inconsistent with individual record:
+        GedcomFile._family_dt['@F_test3'].children = ({'@I7@'})
+
+        #Individual records that are inconsistent with the above family records:
+        GedcomFile._individual_dt['@I0@'].fams = ({'@F_test5'})
+        GedcomFile._individual_dt['@I1@'].fams = ({'@F_test5'})
+        GedcomFile._individual_dt['@I2@'].famc = ({'@F_test5'})
+        GedcomFile._individual_dt['@I3@'].famc = ({'@F_test5'})
+        GedcomFile._individual_dt['@I4@'].famc = ({'@F_test5'})
+        GedcomFile._individual_dt['@I5@'].fams = ({'@F_test4'})
+        GedcomFile._individual_dt['@I6@'].fams = ({'@F_test3'})
+        GedcomFile._individual_dt['@I7@'].famc = ({'@F_test1'})
+
+        fam0_children: List[str] = list(GedcomFile._family_dt['@F_test0'].children)
+        fam0_child1: str = f'{fam0_children[0]}-{GedcomFile._individual_dt[fam0_children[0]].name}'
+        fam0_child2: str = f'{fam0_children[1]}-{GedcomFile._individual_dt[fam0_children[1]].name}'
+        fam0_child3: str = f'{fam0_children[2]}-{GedcomFile._individual_dt[fam0_children[2]].name}'
+
+        result: List[str] = GedcomFile.US26_corresponding_entries_families(self.gedcom)
+
+        expected: List[str] = [
+
+             f'ERROR: US26: Family @F_test0 and Individual @I0@-Test Subject0 show spouse inconsistency. @F_test0 identifies @I0@-Test Subject0 as husband, but @I0@-Test Subject0 is husband in @F_test5',
+             f'ERROR: US26: Family @F_test0 and Individual @I1@-Test Subject1 show spouse inconsistency. @F_test0 identifies @I1@-Test Subject1 as wife, but @I1@-Test Subject1 is wife in @F_test5',
+             f'ERROR: US26: Family @F_test0 and Individual {fam0_child1} show child inconsistency. @F_test0 identifies {fam0_child1} as child, but {fam0_child1} is child in @F_test5',
+             f'ERROR: US26: Family @F_test0 and Individual {fam0_child2} show child inconsistency. @F_test0 identifies {fam0_child2} as child, but {fam0_child2} is child in @F_test5',
+             f'ERROR: US26: Family @F_test0 and Individual {fam0_child3} show child inconsistency. @F_test0 identifies {fam0_child3} as child, but {fam0_child3} is child in @F_test5',
+             f'ERROR: US26: Family @F_test1 and Individual @I5@-Test Subject5 show spouse inconsistency. @F_test1 identifies @I5@-Test Subject5 as wife, but @I5@-Test Subject5 is wife in @F_test4',
+             f'ERROR: US26: Family @F_test2 and Individual @I6@-Test Subject6 show spouse inconsistency. @F_test2 identifies @I6@-Test Subject6 as husband, but @I6@-Test Subject6 is husband in @F_test3',
+             f'ERROR: US26: Family @F_test3 and Individual @I7@-Test Subject7 show child inconsistency. @F_test3 identifies @I7@-Test Subject7 as child, but @I7@-Test Subject7 is child in @F_test1',    
+
+        
+        ]
+
+        self.assertEqual(result, expected)
+
+
+    def test_US29_list_deceased_individuals(self) -> None:
+        '''tests that the method implented for US29 stores the ID and Name for all individuals that are deceased'''
+
+        GedcomFile._individual_dt['@I0@'].living = False
+        GedcomFile._individual_dt['@I0@'].death_date = datetime.date(1990,10,12)
+
+        GedcomFile._individual_dt['@I1@'].living = False
+        GedcomFile._individual_dt['@I1@'].death_date = datetime.date(1985,11,11)
+
+        GedcomFile._individual_dt['@I2@'].living = False
+        GedcomFile._individual_dt['@I2@'].death_date = datetime.date(1995,11,11)
+
+
+        result: Dict[str, str] = GedcomFile.US29_list_deceased_individuals(self.gedcom)
+
+        expected: Dict[str, str] = {
+
+                    '@I0@' : {'name':'Test Subject0', 'death date': datetime.date(1990,10,12)},
+                    '@I1@' : {'name':'Test Subject1', 'death date': datetime.date(1985,11,11)},
+                    '@I2@' : {'name':'Test Subject2', 'death date': datetime.date(1995,11,11)},
+        }
+
+
+        self.assertEqual(result, expected)
+
+
 
     def test_US38_upcoming_birthdays(self):
 
