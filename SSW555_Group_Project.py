@@ -2,6 +2,7 @@ from typing import Iterator, Tuple, IO, List, Dict, Set, DefaultDict
 from collections import defaultdict
 import datetime
 import os
+import sys
 from prettytable import PrettyTable
 
 class Family:
@@ -1313,7 +1314,12 @@ class GedcomFile:
 def main() -> None:
     '''Runs main program'''
 
-    file_name: str = input('Enter GEDCOM file name: ')
+    # If the caller included the gedcom file as a parameter, accept it!
+    # otherwise, prompt the user for it.
+    if len(sys.argv) < 2:
+        file_name: str = input('Enter GEDCOM file name: ')
+    else:
+        file_name = sys.argv[1]
     
     gedcom: GedcomFile = GedcomFile()
     gedcom.read_file(file_name)
