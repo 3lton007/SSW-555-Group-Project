@@ -1326,27 +1326,27 @@ def main() -> None:
     gedcom.print_individuals_pretty()
     gedcom.print_family_pretty()
 
-    # Print out User Story output from hereon
+
+    #Sprint 1
     gedcom.US34_list_large_age_differences()
     gedcom.US35_list_recent_births()
     gedcom.US4_Marriage_before_divorce()
     gedcom.US21_correct_gender_for_role()
-    gedcom.US2_birth_before_marriage()
-    gedcom.US5_marriage_before_death()
-
-    #US30 & #US31
-    gedcom.parse_individuals_based_on_living_and_marital_details()
-    gedcom.list_individuals_living_and_married()
-    gedcom.list_individuals_living_over_thirty_never_married()
-    
+    gedcom.parse_individuals_based_on_living_and_marital_details() #US30
+    gedcom.list_individuals_living_and_married() #US30
+    gedcom.list_individuals_living_over_thirty_never_married() #US31
     gedcom.US03_birth_death()
     gedcom.US06_divorce_before_death()
+
+    #Sprint 2
+    gedcom.US2_birth_before_marriage()
+    gedcom.US5_marriage_before_death()
     gedcom.US07_Death150()
     gedcom.US12_Mother_Father_older()
-    gedcom.US16_male()
     gedcom.US28_list_all_siblings_from_oldest_to_youngest()
     gedcom.US36_list_recent_deaths()
     gedcom.US37_list_recent_survivors()
+    # Note: US27 included in Individuals Table
 
     
     # Sprint 03
@@ -1357,6 +1357,7 @@ def main() -> None:
     gedcom.US23_uni_name_birth()
     gedcom.US24_unique_families_by_spouses()
     gedcom.US25_unique_first_names_in_families()
+    gedcom.US16_male()
 
     # Sprint 04
     gedcom.US01_dates_b4_current()
