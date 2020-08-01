@@ -517,7 +517,7 @@ class GedcomFile:
                         print(output)
                         r.append(output)
         return r 
-    
+
     def US14_multiple_births(self):
         '''No more than five siblings should be born at the same time '''
         r = []
@@ -879,7 +879,7 @@ class GedcomFile:
             print(f"US37: Survivors of recently deceased:\n{pt_survivors}")
         return pt_survivors
 
-
+                  
     def Determine_multiple_birth(self, famc):
         multiple_birth_set = set()
         child_lst = list()
